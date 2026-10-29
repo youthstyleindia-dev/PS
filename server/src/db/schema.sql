@@ -110,6 +110,29 @@ CREATE TABLE IF NOT EXISTS placement_milestones (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS placement_records (
+  id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  academic_year TEXT NOT NULL,
+  program TEXT NOT NULL,
+  branch TEXT NOT NULL,
+  status TEXT NOT NULL,
+  placement_category TEXT,
+  company_profile TEXT,
+  ctc_lpa REAL,
+  cgpa REAL,
+  category_inferred TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_placement_records_email ON placement_records(email);
+CREATE INDEX IF NOT EXISTS idx_placement_records_branch ON placement_records(branch);
+CREATE INDEX IF NOT EXISTS idx_placement_records_status ON placement_records(status);
+CREATE INDEX IF NOT EXISTS idx_placement_records_year ON placement_records(academic_year);
+
 CREATE TABLE IF NOT EXISTS mentors (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -414,6 +437,61 @@ CREATE TABLE IF NOT EXISTS exam_audit_log (
   reason_code TEXT NOT NULL,
   proctor_notes TEXT NOT NULL, -- Mandatory
   timestamp_utc TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Vision Model Registry (ML Provenance and Checksums)
+CREATE TABLE IF NOT EXISTS vision_model_registry (
+  id TEXT PRIMARY KEY,
+  model_key TEXT NOT NULL CHECK(model_key IN ('face_landmarker', 'person_detector')),
+  model_name TEXT NOT NULL,
+  model_version TEXT NOT NULL,
+  artifact_filename TEXT NOT NULL,
+  artifact_sha256 TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  license_identifier TEXT NOT NULL,
+  model_card_url TEXT NOT NULL,
+  runtime_package TEXT NOT NULL,
+  runtime_package_version TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  verified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Candidate Vision Consents (Voluntary, Revocable, Metadata Only)
+CREATE TABLE IF NOT EXISTS exam_vision_consents (
+  id TEXT PRIMARY KEY,
+  exam_session_id TEXT NOT NULL REFERENCES exam_sessions(id) ON DELETE CASCADE,
+  candidate_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  consent_version TEXT NOT NULL DEFAULT 'v1.0',
+  consent_status TEXT NOT NULL CHECK(consent_status IN ('granted', 'declined', 'withdrawn')),
+  explanation_version TEXT NOT NULL DEFAULT 'v1.0',
+  granted_at TEXT,
+  withdrawn_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Observation Rule Versions
+CREATE TABLE IF NOT EXISTS exam_vision_rule_versions (
+  id TEXT PRIMARY KEY,
+  rule_key TEXT NOT NULL,
+  version TEXT NOT NULL,
+  configuration_json TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  effective_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  author TEXT NOT NULL DEFAULT 'SYSTEM',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Observation Lifecycle Audit
+CREATE TABLE IF NOT EXISTS exam_observation_audit (
+  id TEXT PRIMARY KEY,
+  observation_id TEXT NOT NULL REFERENCES observation_events(id) ON DELETE CASCADE,
+  exam_session_id TEXT NOT NULL REFERENCES exam_sessions(id) ON DELETE CASCADE,
+  actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  actor_role TEXT NOT NULL,
+  action TEXT NOT NULL,
+  details_json TEXT NOT NULL DEFAULT '{}',
+  timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ------------------------------------------------------------------------------

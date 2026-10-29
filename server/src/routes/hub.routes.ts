@@ -854,3 +854,247 @@ hubRouter.post('/resources/:resourceId/rate', (req: Request, res: Response): voi
     isUpdate: previousRating !== undefined
   });
 });
+
+// ==========================================
+// 6. PLACEMENT DATASET OBSERVATORY & EXPLORER
+// ==========================================
+
+/**
+ * GET /api/hub/placements
+ * Query & browse the full student placement dataset with pagination & multi-facet filters
+ */
+hubRouter.get('/placements', (req: Request, res: Response): void => {
+  const db = getDb();
+  const {
+    branch,
+    academicYear,
+    status,
+    category,
+    search,
+    minCgpa,
+    minCtc,
+    sortBy = 'ctc_lpa',
+    sortOrder = 'desc',
+    page = '1',
+    limit = '20'
+  } = req.query;
+
+  const numPage = Math.max(1, parseInt(String(page), 10) || 1);
+  const numLimit = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
+  const offset = (numPage - 1) * numLimit;
+
+  let baseSql = 'FROM placement_records WHERE 1=1';
+  const params: any[] = [];
+
+  if (branch) {
+    baseSql += ' AND LOWER(branch) = LOWER(?)';
+    params.push(String(branch).trim());
+  }
+
+  if (academicYear) {
+    baseSql += ' AND academic_year = ?';
+    params.push(String(academicYear).trim());
+  }
+
+  if (status) {
+    baseSql += ' AND LOWER(status) = LOWER(?)';
+    params.push(String(status).trim());
+  }
+
+  if (category) {
+    baseSql += ' AND LOWER(placement_category) = LOWER(?)';
+    params.push(String(category).trim());
+  }
+
+  if (minCgpa) {
+    baseSql += ' AND cgpa >= ?';
+    params.push(parseFloat(String(minCgpa)) || 0);
+  }
+
+  if (minCtc) {
+    baseSql += ' AND ctc_lpa >= ?';
+    params.push(parseFloat(String(minCtc)) || 0);
+  }
+
+  if (search) {
+    const term = `%${String(search).trim()}%`;
+    baseSql += ' AND (name LIKE ? OR email LIKE ? OR student_id LIKE ? OR company_profile LIKE ?)';
+    params.push(term, term, term, term);
+  }
+
+  // Count total matching
+  const countRow = db.prepare(`SELECT COUNT(*) as total ${baseSql}`).get(...params) as { total: number };
+  const total = countRow ? countRow.total : 0;
+
+  // Sorting
+  const allowedSortCols: Record<string, string> = {
+    ctc_lpa: 'ctc_lpa',
+    cgpa: 'cgpa',
+    name: 'name',
+    student_id: 'student_id',
+    academic_year: 'academic_year'
+  };
+  const sortCol = allowedSortCols[String(sortBy)] || 'ctc_lpa';
+  const orderDir = String(sortOrder).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+  const dataSql = `
+    SELECT id, student_id as studentId, user_id as userId, name, email,
+           academic_year as academicYear, program, branch, status,
+           placement_category as placementCategory, company_profile as companyProfile,
+           ctc_lpa as ctcLpa, cgpa, category_inferred as categoryInferred, created_at as createdAt
+    ${baseSql}
+    ORDER BY ${sortCol} ${orderDir} NULLS LAST
+    LIMIT ? OFFSET ?
+  `;
+
+  const rows = db.prepare(dataSql).all(...params, numLimit, offset) as any[];
+
+  res.json({
+    total,
+    page: numPage,
+    limit: numLimit,
+    totalPages: Math.ceil(total / numLimit),
+    records: rows
+  });
+});
+
+/**
+ * GET /api/hub/placements/stats
+ * Aggregated collegiate placement telemetry across the full 1,997 student dataset
+ */
+hubRouter.get('/placements/stats', (_req: Request, res: Response): void => {
+  const db = getDb();
+
+  // Overview KPIs
+  const kpis = db.prepare(`
+    SELECT
+      COUNT(*) as totalCandidates,
+      SUM(CASE WHEN LOWER(status) = 'placed' THEN 1 ELSE 0 END) as totalPlaced,
+      ROUND(AVG(CASE WHEN LOWER(status) = 'placed' THEN ctc_lpa ELSE NULL END), 2) as avgCtc,
+      MAX(ctc_lpa) as highestCtc,
+      ROUND(AVG(cgpa), 2) as avgCgpa
+    FROM placement_records
+  `).get() as any;
+
+  const total = kpis.totalCandidates || 1;
+  const placed = kpis.totalPlaced || 0;
+  const placementRate = Math.round((placed / total) * 1000) / 10;
+
+  // Branch breakdown
+  const branchBreakdown = db.prepare(`
+    SELECT
+      branch,
+      COUNT(*) as total,
+      SUM(CASE WHEN LOWER(status) = 'placed' THEN 1 ELSE 0 END) as placed,
+      ROUND(AVG(CASE WHEN LOWER(status) = 'placed' THEN ctc_lpa ELSE NULL END), 2) as avgCtc,
+      ROUND(AVG(cgpa), 2) as avgCgpa,
+      MAX(ctc_lpa) as highestCtc
+    FROM placement_records
+    GROUP BY branch
+    ORDER BY total DESC
+  `).all() as any[];
+
+  const formattedBranches = branchBreakdown.map(b => ({
+    ...b,
+    placementRate: Math.round(((b.placed || 0) / (b.total || 1)) * 1000) / 10
+  }));
+
+  // Category breakdown
+  const categoryBreakdown = db.prepare(`
+    SELECT
+      COALESCE(placement_category, 'Uncategorized') as category,
+      COUNT(*) as count,
+      ROUND(AVG(ctc_lpa), 2) as avgCtc,
+      MAX(ctc_lpa) as maxCtc
+    FROM placement_records
+    WHERE LOWER(status) = 'placed'
+    GROUP BY placement_category
+    ORDER BY avgCtc DESC
+  `).all() as any[];
+
+  // Status breakdown
+  const statusBreakdown = db.prepare(`
+    SELECT
+      status,
+      COUNT(*) as count,
+      ROUND((COUNT(*) * 100.0) / (SELECT COUNT(*) FROM placement_records), 1) as percentage
+    FROM placement_records
+    GROUP BY status
+    ORDER BY count DESC
+  `).all() as any[];
+
+  // Year breakdown
+  const yearBreakdown = db.prepare(`
+    SELECT
+      academic_year as academicYear,
+      COUNT(*) as total,
+      SUM(CASE WHEN LOWER(status) = 'placed' THEN 1 ELSE 0 END) as placed,
+      ROUND(AVG(CASE WHEN LOWER(status) = 'placed' THEN ctc_lpa ELSE NULL END), 2) as avgCtc
+    FROM placement_records
+    GROUP BY academic_year
+    ORDER BY academic_year ASC
+  `).all() as any[];
+
+  // Top company recruiters
+  const topRecruiters = db.prepare(`
+    SELECT
+      company_profile as companyCode,
+      COUNT(*) as offersCount,
+      ROUND(AVG(ctc_lpa), 2) as avgCtc,
+      MAX(ctc_lpa) as maxCtc,
+      placement_category as tier
+    FROM placement_records
+    WHERE company_profile IS NOT NULL AND company_profile != ''
+    GROUP BY company_profile
+    ORDER BY offersCount DESC
+    LIMIT 10
+  `).all() as any[];
+
+  res.json({
+    provenance: '[AUTHENTIC DATASET]',
+    kpis: {
+      totalCandidates: total,
+      totalPlaced: placed,
+      placementRate,
+      avgCtc: kpis.avgCtc || 0,
+      highestCtc: kpis.highestCtc || 0,
+      avgCgpa: kpis.avgCgpa || 0
+    },
+    branchBreakdown: formattedBranches,
+    categoryBreakdown,
+    statusBreakdown,
+    yearBreakdown,
+    topRecruiters
+  });
+});
+
+/**
+ * GET /api/hub/placements/student/:idOrEmail
+ * Query detailed placement, profile, and focus activity for a specific student
+ */
+hubRouter.get('/placements/student/:idOrEmail', (req: Request, res: Response): void => {
+  const { idOrEmail } = req.params;
+  const db = getDb();
+
+  const record = db.prepare(`
+    SELECT pr.*, u.avatar, u.department as userDepartment, sp.readiness_score as readinessScore, sp.skills, sp.placement_goals as placementGoals
+    FROM placement_records pr
+    LEFT JOIN users u ON pr.user_id = u.id OR LOWER(pr.email) = LOWER(u.email)
+    LEFT JOIN student_profiles sp ON u.id = sp.user_id
+    WHERE LOWER(pr.email) = LOWER(?) OR LOWER(pr.student_id) = LOWER(?) OR pr.id = ? OR pr.user_id = ?
+  `).get(idOrEmail, idOrEmail, idOrEmail, idOrEmail) as any;
+
+  if (!record) {
+    res.status(404).json({ error: { code: 'NOT_FOUND', message: `Placement record '${idOrEmail}' not found` } });
+    return;
+  }
+
+  // Fetch student focus session count
+  const focusCount = db.prepare('SELECT COUNT(*) as count FROM focus_sessions WHERE user_id = ?').get(record.user_id) as { count: number };
+
+  res.json({
+    ...record,
+    focusSessionsCount: focusCount ? focusCount.count : 0,
+    skills: record.skills ? JSON.parse(record.skills) : []
+  });
+});

@@ -4,7 +4,9 @@ import {
   PlacementMilestone,
   PeerMentor,
   MentorshipRequest,
-  AcademicResource
+  AcademicResource,
+  PlacementRecord,
+  PlacementStats
 } from '../types';
 
 // Deterministic seed fallbacks matching SQLite data
@@ -473,5 +475,50 @@ export const hubService = {
       }
       throw error;
     }
+  },
+
+  async getPlacementStats(): Promise<PlacementStats> {
+    return await request<PlacementStats>('/hub/placements/stats');
+  },
+
+  async getPlacements(params: {
+    page?: number;
+    limit?: number;
+    branch?: string;
+    academicYear?: string;
+    status?: string;
+    category?: string;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  } = {}): Promise<{
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    records: PlacementRecord[];
+  }> {
+    const q = new URLSearchParams();
+    if (params.page) q.set('page', String(params.page));
+    if (params.limit) q.set('limit', String(params.limit));
+    if (params.branch && params.branch !== 'All') q.set('branch', params.branch);
+    if (params.academicYear && params.academicYear !== 'All') q.set('academicYear', params.academicYear);
+    if (params.status && params.status !== 'All') q.set('status', params.status);
+    if (params.category && params.category !== 'All') q.set('category', params.category);
+    if (params.search) q.set('search', params.search);
+    if (params.sortBy) q.set('sortBy', params.sortBy);
+    if (params.sortOrder) q.set('sortOrder', params.sortOrder);
+
+    return await request<{
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      records: PlacementRecord[];
+    }>(`/hub/placements?${q.toString()}`);
+  },
+
+  async getStudentPlacement(idOrEmail: string): Promise<PlacementRecord & { focusSessionsCount: number; skills: string[] }> {
+    return await request<PlacementRecord & { focusSessionsCount: number; skills: string[] }>(`/hub/placements/student/${encodeURIComponent(idOrEmail)}`);
   }
 };

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { PlacementDatasetExplorer } from '../components/PlacementDatasetExplorer';
 
 export const AcademicHub: React.FC<{ currentRole?: string }> = () => {
-  const [activeTab, setActiveTab] = useState<'skills' | 'tasks' | 'mentors' | 'resources'>('skills');
+  const [activeTab, setActiveTab] = useState<'skills' | 'tasks' | 'mentors' | 'resources' | 'placements'>('skills');
   const [mentorModalOpen, setMentorModalOpen] = useState(false);
   const [selectedMentor, setSelectedMentor] = useState<string | null>(null);
   const [requestNote, setRequestNote] = useState('');
@@ -161,7 +162,7 @@ export const AcademicHub: React.FC<{ currentRole?: string }> = () => {
           </button>
           <button
             onClick={() => setActiveTab('resources')}
-            className={`px-4 py-3 font-label-md text-label-md font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+            className={`px-4 py-3 font-label-md text-label-md font-bold uppercase tracking-wider transition-all border-r border-outline-variant flex items-center gap-2 ${
               activeTab === 'resources'
                 ? 'bg-surface-container-lowest text-primary border-b-2 border-b-secondary'
                 : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'
@@ -169,6 +170,17 @@ export const AcademicHub: React.FC<{ currentRole?: string }> = () => {
           >
             <span className="material-symbols-outlined text-[16px]">menu_book</span>
             04 // Sovereign Course Catalog
+          </button>
+          <button
+            onClick={() => setActiveTab('placements')}
+            className={`px-4 py-3 font-label-md text-label-md font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+              activeTab === 'placements'
+                ? 'bg-surface-container-lowest text-primary border-b-2 border-b-secondary'
+                : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">school</span>
+            05 // Placement Dataset (1,997 Scholars)
           </button>
         </div>
 
@@ -680,6 +692,11 @@ export const AcademicHub: React.FC<{ currentRole?: string }> = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 5: Placement Dataset Explorer */}
+          {activeTab === 'placements' && (
+            <PlacementDatasetExplorer />
           )}
         </div>
       </section>

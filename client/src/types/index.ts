@@ -156,3 +156,66 @@ export interface CampusMetrics {
     flaggedObservations: number;
   };
 }
+
+export interface PlacementRecord {
+  id: string;
+  studentId: string;
+  userId?: string;
+  name: string;
+  email: string;
+  academicYear: string;
+  program: string;
+  branch: string;
+  status: string;
+  placementCategory?: string;
+  companyProfile?: string;
+  ctcLpa?: number;
+  cgpa: number;
+  categoryInferred?: string;
+  createdAt?: string;
+}
+
+export interface PlacementStats {
+  provenance: string;
+  kpis: {
+    totalCandidates: number;
+    totalPlaced: number;
+    placementRate: number;
+    avgCtc: number;
+    highestCtc: number;
+    avgCgpa: number;
+  };
+  branchBreakdown: Array<{
+    branch: string;
+    total: number;
+    placed: number;
+    avgCtc: number;
+    avgCgpa: number;
+    highestCtc: number;
+    placementRate: number;
+  }>;
+  categoryBreakdown: Array<{
+    category: string;
+    count: number;
+    avgCtc: number;
+    maxCtc: number;
+  }>;
+  statusBreakdown: Array<{
+    status: string;
+    count: number;
+    percentage: number;
+  }>;
+  yearBreakdown: Array<{
+    academicYear: string;
+    total: number;
+    placed: number;
+    avgCtc: number;
+  }>;
+  topRecruiters: Array<{
+    companyCode: string;
+    offersCount: number;
+    avgCtc: number;
+    maxCtc: number;
+    tier?: string;
+  }>;
+}
