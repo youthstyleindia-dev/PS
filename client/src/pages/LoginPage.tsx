@@ -14,6 +14,7 @@ export const LoginPage: React.FC = () => {
   const [isEphemeral, setIsEphemeral] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [lockoutError, setLockoutError] = useState<string | null>(null);
 
   // Register form state (always provisioned as student)
   const [regName, setRegName] = useState('');
@@ -88,6 +89,64 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const demoPersonas: Array<{
+    role: UserRole;
+    name: string;
+    email: string;
+    badge: string;
+    badgeColor: string;
+    desc: string;
+  }> = [
+    {
+      role: 'student',
+      name: 'Aarav Sharma',
+      email: 'aarav.sharma@campus.edu',
+      badge: 'STUDENT',
+      badgeColor: 'bg-secondary text-on-secondary',
+      desc: '4th-Year Computer Science • Placement Readiness 85%'
+    },
+    {
+      role: 'driver',
+      name: 'Vikram Rao',
+      email: 'vikram.rao@campus.edu',
+      badge: 'DRIVER',
+      badgeColor: 'bg-emerald-600 text-white',
+      desc: 'Tata Nexon EV • Daily North Gate Itinerary Operator'
+    },
+    {
+      role: 'proctor',
+      name: 'Dr. Meenakshi Sundaram',
+      email: 'm.sundaram@campus.edu',
+      badge: 'PROCTOR',
+      badgeColor: 'bg-amber-600 text-white',
+      desc: 'Examination Review Chair • Double-Blind Auditor'
+    },
+    {
+      role: 'ta_faculty',
+      name: 'Dr. Priya Patel',
+      email: 'dr.patel@campus.edu',
+      badge: 'FACULTY / TA',
+      badgeColor: 'bg-blue-600 text-white',
+      desc: 'Graduate Mentor & Resource Author'
+    },
+    {
+      role: 'warden',
+      name: 'Campus Residential Warden',
+      email: 'warden@campus.edu',
+      badge: 'WARDEN',
+      badgeColor: 'bg-teal-600 text-white',
+      desc: 'Residential Operations & Transit Safety'
+    },
+    {
+      role: 'admin',
+      name: 'Campus IT Operations',
+      email: 'admin@campus.edu',
+      badge: 'ADMIN',
+      badgeColor: 'bg-purple-600 text-white',
+      desc: 'System Operations • 25 Relational SQLite Tables'
+    }
+  ];
+
   const currentMeta = normalizedTargetRole && portalMetadata[normalizedTargetRole]
     ? portalMetadata[normalizedTargetRole]
     : {
@@ -126,13 +185,18 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoPersona = async (role: UserRole) => {
+  const handleDemoPersona = async (personaRole: UserRole, personaName: string) => {
     clearError();
+    setLockoutError(null);
+    if (normalizedTargetRole && personaRole !== normalizedTargetRole) {
+      setLockoutError(`ACCESS LOCKOUT: ${personaRole.toUpperCase()} account (${personaName}) is strictly locked out of the ${normalizedTargetRole.toUpperCase()} portal. Use the authorized ${normalizedTargetRole.toUpperCase()} account instead.`);
+      return;
+    }
     setLoading(true);
     try {
-      await demoLogin(role);
+      await demoLogin(personaRole);
       navigate('/app');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
     } finally {
       setLoading(false);
@@ -250,149 +314,47 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {/* Persona 1: Student */}
-                  <button
-                    disabled={loading}
-                    onClick={() => handleDemoPersona('student')}
-                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
-                  >
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
-                          Aarav Sharma
+                  {demoPersonas.map((p) => {
+                    const isLockedOut = normalizedTargetRole !== null && normalizedTargetRole !== p.role;
+                    return (
+                      <button
+                        key={p.role}
+                        disabled={loading}
+                        onClick={() => handleDemoPersona(p.role, p.name)}
+                        className={`w-full text-left p-3 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border shadow-sm group ${
+                          isLockedOut
+                            ? 'bg-surface-container-low/60 border-error/40 hover:bg-red-50/50 cursor-pointer opacity-85'
+                            : 'bg-surface-container-lowest hover:bg-surface-container-high border-outline-variant cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`font-headline-sm text-[15px] font-bold ${isLockedOut ? 'text-on-surface-variant' : 'text-primary group-hover:text-secondary'}`}>
+                              {p.name}
+                            </span>
+                            <span className={`text-[10px] font-mono px-1.5 py-0.2 font-bold uppercase ${p.badgeColor}`}>
+                              {p.badge}
+                            </span>
+                            {isLockedOut && (
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 bg-error text-on-error font-bold uppercase tracking-wider">
+                                LOCKED OUT OF PORTAL
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-body-sm text-xs text-on-surface-variant">
+                            {p.desc}
+                          </span>
+                        </div>
+                        <span className={`font-label-sm text-xs px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0 ${
+                          isLockedOut
+                            ? 'bg-error text-on-error border border-error shadow-sm'
+                            : 'bg-primary text-on-primary'
+                        }`}>
+                          {isLockedOut ? 'Locked Out' : 'Enter'}
                         </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-secondary text-on-secondary font-bold uppercase">
-                          STUDENT
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-xs text-on-surface-variant">
-                        4th-Year Computer Science • Placement Readiness 85%
-                      </span>
-                    </div>
-                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
-                      Enter
-                    </span>
-                  </button>
-
-                  {/* Persona 2: Driver */}
-                  <button
-                    disabled={loading}
-                    onClick={() => handleDemoPersona('driver')}
-                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
-                  >
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
-                          Vikram Rao
-                        </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-emerald-600 text-white font-bold uppercase">
-                          DRIVER
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-xs text-on-surface-variant">
-                        Tata Nexon EV • Daily North Gate Itinerary Operator
-                      </span>
-                    </div>
-                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
-                      Enter
-                    </span>
-                  </button>
-
-                  {/* Persona 3: Proctor */}
-                  <button
-                    disabled={loading}
-                    onClick={() => handleDemoPersona('proctor')}
-                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
-                  >
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
-                          Dr. Meenakshi Sundaram
-                        </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-amber-600 text-white font-bold uppercase">
-                          PROCTOR
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-xs text-on-surface-variant">
-                        Examination Review Chair • Double-Blind Auditor
-                      </span>
-                    </div>
-                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
-                      Enter
-                    </span>
-                  </button>
-
-                  {/* Persona 4: Faculty / TA */}
-                  <button
-                    disabled={loading}
-                    onClick={() => handleDemoPersona('ta_faculty')}
-                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
-                  >
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
-                          Dr. Priya Patel
-                        </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-blue-600 text-white font-bold uppercase">
-                          FACULTY / TA
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-xs text-on-surface-variant">
-                        Graduate Mentor &amp; Resource Author
-                      </span>
-                    </div>
-                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
-                      Enter
-                    </span>
-                  </button>
-
-                  {/* Persona 5: Warden */}
-                  <button
-                    disabled={loading}
-                    onClick={() => handleDemoPersona('warden')}
-                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
-                  >
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
-                          Campus Residential Warden
-                        </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-teal-600 text-white font-bold uppercase">
-                          WARDEN
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-xs text-on-surface-variant">
-                        Residential Operations &amp; Transit Safety
-                      </span>
-                    </div>
-                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
-                      Enter
-                    </span>
-                  </button>
-
-                  {/* Persona 6: Admin */}
-                  <button
-                    disabled={loading}
-                    onClick={() => handleDemoPersona('admin')}
-                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
-                  >
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
-                          Campus IT Operations
-                        </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-purple-600 text-white font-bold uppercase">
-                          ADMIN
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-xs text-on-surface-variant">
-                        System Operations • 28 Relational SQLite Tables
-                      </span>
-                    </div>
-                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
-                      Enter
-                    </span>
-                  </button>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -434,14 +396,14 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 {/* Error Banner */}
-                {error && (
+                {(error || lockoutError) && (
                   <div className="p-3 bg-red-50 border border-error text-error text-xs font-mono flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 font-bold">
                         <span className="material-symbols-outlined text-[16px]">error</span>
-                        {error}
+                        {lockoutError || error}
                       </span>
-                      <button onClick={clearError} className="underline text-[10px]">
+                      <button onClick={() => { clearError(); setLockoutError(null); }} className="underline text-[10px] cursor-pointer">
                         Dismiss
                       </button>
                     </div>
@@ -484,6 +446,13 @@ export const LoginPage: React.FC = () => {
                           className="px-2 py-0.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[10px] font-mono text-on-surface font-semibold"
                         >
                           Faculty (Dr. Patel)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setEmail('warden@campus.edu'); setPassword('CampusPass123!'); }}
+                          className="px-2 py-0.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[10px] font-mono text-on-surface font-semibold"
+                        >
+                          Warden (Residential)
                         </button>
                         <button
                           type="button"
