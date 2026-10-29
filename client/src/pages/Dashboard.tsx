@@ -291,6 +291,64 @@ export const Dashboard: React.FC = () => {
               <div className="text-outline">Shared carpool legs discounted 40%</div>
             </div>
           </div>
+        ) : user?.role === 'ta_faculty' ? (
+          <div
+            onClick={() => navigate('/academic')}
+            className="bg-surface-container-lowest p-4 border border-outline-variant shadow-sm flex flex-col justify-between cursor-pointer hover:border-secondary transition-all"
+          >
+            <div>
+              <div className="flex items-center justify-between pb-1">
+                <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider font-mono">
+                  REF: FACULTY_DESK
+                </span>
+                <span className="font-label-sm text-label-sm px-1.5 py-0.5 bg-emerald-100 text-emerald-800 font-semibold uppercase font-mono">
+                  ACADEMIC MESH
+                </span>
+              </div>
+              <div className="mt-1">
+                <span className="font-body-sm text-body-sm text-on-surface-variant block">Faculty Mentorship &amp; Curriculum</span>
+                <h3 className="font-headline-sm text-headline-sm text-primary mt-0.5 font-bold">
+                  5 Mentees • 3 Study Pods
+                </h3>
+              </div>
+            </div>
+            <div className="mt-4 pt-1 space-y-1 font-label-sm text-label-sm font-mono border-t border-outline-variant/40">
+              <div className="flex items-center justify-between text-on-surface">
+                <span>Course: CS301 Systems</span>
+                <span className="text-secondary font-medium">Archive Sync 100%</span>
+              </div>
+              <div className="text-outline">Resource approval queue open</div>
+            </div>
+          </div>
+        ) : user?.role === 'warden' ? (
+          <div
+            onClick={() => navigate('/rides')}
+            className="bg-surface-container-lowest p-4 border border-outline-variant shadow-sm flex flex-col justify-between cursor-pointer hover:border-secondary transition-all"
+          >
+            <div>
+              <div className="flex items-center justify-between pb-1">
+                <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider font-mono">
+                  REF: RESIDENTIAL_OPS
+                </span>
+                <span className="font-label-sm text-label-sm px-1.5 py-0.5 bg-orange-100 text-orange-800 font-semibold uppercase font-mono">
+                  CAMPUS TRANSIT
+                </span>
+              </div>
+              <div className="mt-1">
+                <span className="font-body-sm text-body-sm text-on-surface-variant block">Residential Hall Mobility</span>
+                <h3 className="font-headline-sm text-headline-sm text-primary mt-0.5 font-bold">
+                  10 Hubs • 4 EV Shuttles
+                </h3>
+              </div>
+            </div>
+            <div className="mt-4 pt-1 space-y-1 font-label-sm text-label-sm font-mono border-t border-outline-variant/40">
+              <div className="flex items-center justify-between text-on-surface">
+                <span>Residence Zone: North Hall</span>
+                <span className="text-secondary font-medium">Safe Fleet</span>
+              </div>
+              <div className="text-outline">Late night transit safety check active</div>
+            </div>
+          </div>
         ) : (
           <div
             onClick={() => navigate('/academic')}

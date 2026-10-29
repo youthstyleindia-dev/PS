@@ -84,11 +84,9 @@ export function seedDatabase(customDbPath?: string): void {
     insertRoleAssignment.run('ra_stu_4', 'usr_student_4', 'student', 'Matriculated undergraduate');
 
     insertRoleAssignment.run('ra_drv_1', 'usr_driver_1', 'driver', 'Authorized campus EV driver');
-    insertRoleAssignment.run('ra_drv_1_stu', 'usr_driver_1', 'student', 'Driver is also an engineering student');
     insertRoleAssignment.run('ra_drv_2', 'usr_driver_2', 'driver', 'Transit fleet operator');
 
     insertRoleAssignment.run('ra_prc_1', 'usr_proctor_1', 'proctor', 'Appointed exam ombudsman');
-    insertRoleAssignment.run('ra_prc_1_fac', 'usr_proctor_1', 'ta_faculty', 'Faculty senate member');
     insertRoleAssignment.run('ra_prc_2', 'usr_proctor_2', 'proctor', 'Appointed chief invigilator');
 
     insertRoleAssignment.run('ra_fac_1', 'usr_faculty_1', 'ta_faculty', 'Faculty professor appointment');
