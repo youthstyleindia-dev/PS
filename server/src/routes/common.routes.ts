@@ -202,21 +202,31 @@ commonRouter.get('/users', requireRole('admin'), (req: Request, res: Response): 
   const { role, department } = req.query;
   const db = getDb();
 
-  let sql = 'SELECT id, name, email, avatar, role, department, year_of_study as yearOfStudy, bio, created_at as createdAt FROM users WHERE 1=1';
+  let sql = `
+    SELECT u.id, u.name, u.email, u.avatar, u.role, u.department, 
+           u.year_of_study as yearOfStudy, u.bio, u.created_at as createdAt,
+           (SELECT GROUP_CONCAT(ra.role_key) FROM role_assignments ra WHERE ra.user_id = u.id AND ra.status = 'active') as assignedRolesStr
+    FROM users u WHERE 1=1
+  `;
   const params: any[] = [];
 
   if (role) {
-    sql += ' AND role = ?';
+    sql += ' AND u.role = ?';
     params.push(String(role).toLowerCase().trim());
   }
 
   if (department) {
-    sql += ' AND LOWER(department) = LOWER(?)';
+    sql += ' AND LOWER(u.department) = LOWER(?)';
     params.push(String(department).trim());
   }
 
-  sql += ' ORDER BY name ASC';
-  const users = db.prepare(sql).all(...params);
+  sql += ' ORDER BY u.name ASC';
+  const rows = db.prepare(sql).all(...params) as any[];
+
+  const users = rows.map(u => ({
+    ...u,
+    roles: u.assignedRolesStr ? Array.from(new Set([u.role, ...u.assignedRolesStr.split(',')])) : [u.role]
+  }));
 
   res.json({
     total: users.length,
