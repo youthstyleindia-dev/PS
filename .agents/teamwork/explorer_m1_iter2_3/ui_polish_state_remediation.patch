@@ -1,0 +1,298 @@
+diff --git a/client/src/components/RoleSwitcher.tsx b/client/src/components/RoleSwitcher.tsx
+--- a/client/src/components/RoleSwitcher.tsx
++++ b/client/src/components/RoleSwitcher.tsx
+@@ -9,31 +9,44 @@
+-const roleConfigs: Record<UserRole, { label: string; icon: React.ElementType; color: string; badge: string; desc: string }> = {
++export interface RoleConfigItem {
++  label: string;
++  name: string;
++  code: string;
++  avatar: string;
++  icon: React.ElementType;
++  color: string;
++  badge: string;
++  desc: string;
++}
++
++export const roleConfigs: Record<UserRole, RoleConfigItem> = {
+   student: {
+     label: 'Student Perspective',
++    name: 'Aarav Sharma',
++    code: 'CS2022_891',
++    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
+     icon: GraduationCap,
+     color: 'text-accent border-accent/30 bg-accent/10',
+     badge: 'Aarav Sharma (CS-4th Yr)',
+     desc: 'Access placement tools, request mentors, book pooled rides'
+   },
+   driver: {
+     label: 'Driver Perspective',
++    name: 'Vikram Rao',
++    code: 'DRV_2024_03',
++    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Vikram',
+     icon: Car,
+     color: 'text-sky-400 border-sky-400/30 bg-sky-500/10',
+     badge: 'Vikram Rao (EV Shuttle)',
+     desc: 'Publish campus routes, accept carpool detours, view carbon'
+   },
+   proctor: {
+     label: 'Proctor Perspective',
++    name: 'Dr. Meenakshi Sundaram',
++    code: 'FAC_CS_104',
++    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Meenakshi',
+     icon: Shield,
+     color: 'text-amber-400 border-amber-400/30 bg-amber-500/10',
+     badge: 'Dr. Meenakshi Sundaram',
+     desc: 'Review CV event detections, dismiss false positives, audit logs'
+   },
+   admin: {
+     label: 'System Admin',
++    name: 'Campus Central IT',
++    code: 'SYS_ADMIN_01',
++    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin',
+     icon: User,
+     color: 'text-purple-400 border-purple-400/30 bg-purple-500/10',
+     badge: 'Campus Central IT',
+     desc: 'Observe energy telemetry, manage workloads, full audit access'
+   }
+ };
+
+diff --git a/client/src/components/Header.tsx b/client/src/components/Header.tsx
+--- a/client/src/components/Header.tsx
++++ b/client/src/components/Header.tsx
+@@ -4,2 +4,2 @@
+-import { RoleSwitcher } from './RoleSwitcher';
++import { RoleSwitcher, roleConfigs } from './RoleSwitcher';
+@@ -20,2 +20,4 @@
+ export const Header: React.FC<HeaderProps> = ({
+   currentRole,
+   onRoleChange,
+   activities,
+   onMarkAllAsRead,
+   onClearActivities
+ }) => {
++  const activeRoleConfig = roleConfigs[currentRole] || roleConfigs.student;
++
+@@ -46,11 +48,27 @@
+-        {/* User Pill */}
+-        <div className="flex items-center gap-2.5 pl-2 border-l border-border-subtle">
+-          <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center font-bold text-accent text-xs">
+-            AS
+-          </div>
+-          <div className="hidden md:block text-left">
+-            <div className="text-xs font-semibold text-fg-primary leading-tight">Aarav Sharma</div>
+-            <div className="text-[10px] text-fg-muted font-mono leading-tight">CS2022_891</div>
+-          </div>
+-        </div>
++        {/* Dynamic User Identity Pill updating with selected role */}
++        <div className="flex items-center gap-2.5 pl-2 border-l border-border-subtle">
++          <div className="relative">
++            <img
++              src={activeRoleConfig.avatar}
++              alt={activeRoleConfig.name}
++              className="w-8 h-8 rounded-full border border-border-subtle object-cover bg-surface"
++            />
++            <span
++              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-sidebar ${
++                currentRole === 'student'
++                  ? 'bg-accent'
++                  : currentRole === 'driver'
++                  ? 'bg-sky-400'
++                  : currentRole === 'proctor'
++                  ? 'bg-amber-400'
++                  : 'bg-purple-400'
++              }`}
++            />
++          </div>
++          <div className="hidden md:block text-left">
++            <div className="text-xs font-semibold text-fg-primary leading-tight flex items-center gap-1.5">
++              <span>{activeRoleConfig.name}</span>
++              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase font-bold tracking-tight ${activeRoleConfig.color}`}>
++                {currentRole}
++              </span>
++            </div>
++            <div className="text-[10px] text-fg-muted font-mono leading-tight">
++              {activeRoleConfig.code} • {activeRoleConfig.badge}
++            </div>
++          </div>
++        </div>
+
+diff --git a/client/src/App.tsx b/client/src/App.tsx
+--- a/client/src/App.tsx
++++ b/client/src/App.tsx
+@@ -207,3 +207,3 @@
+               <Route path="/" element={<Dashboard />} />
+-              <Route path="/hub" element={<AcademicHub />} />
++              <Route path="/hub" element={<AcademicHub currentRole={currentRole} />} />
+               <Route path="/rides" element={<RidePoolingPlaceholder />} />
+
+diff --git a/client/src/pages/AcademicHub.tsx b/client/src/pages/AcademicHub.tsx
+--- a/client/src/pages/AcademicHub.tsx
++++ b/client/src/pages/AcademicHub.tsx
+@@ -1,4 +1,4 @@
+-import React, { useState, useEffect } from 'react';
++import React, { useState, useEffect, useMemo } from 'react';
+ import {
+   GraduationCap,
+   Users,
+@@ -15,3 +15,4 @@
+   Briefcase,
+-  Clock
++  Clock,
++  RotateCcw
+ } from 'lucide-react';
+@@ -32,3 +33,4 @@
+   AcademicResource,
+-  ResourceCategory
++  ResourceCategory,
++  UserRole
+ } from '../types';
+@@ -36,2 +38,6 @@
++interface AcademicHubProps {
++  currentRole?: UserRole;
++}
++
+ type HubTab = 'readiness' | 'mentors' | 'requests' | 'resources';
+ 
+-export const AcademicHub: React.FC = () => {
++export const AcademicHub: React.FC<AcademicHubProps> = ({ currentRole = 'student' }) => {
+@@ -150,9 +156,26 @@
+-  // Recharts Radar Data from skills
+-  const radarData = [
+-    { subject: 'DSA & Graphs', score: 85, fullMark: 100 },
+-    { subject: 'System Design', score: 70, fullMark: 100 },
+-    { subject: 'Core CS (OS/DBMS)', score: 80, fullMark: 100 },
+-    { subject: 'Full-Stack Dev', score: 92, fullMark: 100 },
+-    { subject: 'Cloud & Linux', score: 65, fullMark: 100 },
+-    { subject: 'Behavioral Prep', score: 75, fullMark: 100 }
+-  ];
++  // Dynamically compute the 5 competency categories from actual placement milestones
++  const radarData = useMemo(() => {
++    const categories: { key: string; subject: string; fallback: number }[] = [
++      { key: 'DSA', subject: 'DSA & Graphs', fallback: 50 },
++      { key: 'SystemDesign', subject: 'System Design', fallback: 40 },
++      { key: 'SoftSkills', subject: 'Soft Skills', fallback: 60 },
++      { key: 'Resume', subject: 'Resume', fallback: 50 },
++      { key: 'MockInterview', subject: 'Mock Interview', fallback: 30 }
++    ];
++
++    return categories.map(({ key, subject, fallback }) => {
++      const catMilestones = milestones.filter(
++        (m) =>
++          m.category.toLowerCase().replace(/[^a-z]/g, '') ===
++          key.toLowerCase().replace(/[^a-z]/g, '')
++      );
++      const total = catMilestones.length;
++      const completed = catMilestones.filter((m) => m.completed).length;
++      const score = total > 0 ? Math.round((completed / total) * 100) : fallback;
++      return {
++        subject,
++        score,
++        fullMark: 100
++      };
++    });
++  }, [milestones]);
+@@ -194,2 +217,14 @@
+       </div>
+ 
++      {/* Role Perspective Simulation Banner */}
++      {currentRole !== 'student' && (
++        <div className="p-3.5 rounded-xl bg-surface/80 border border-border-subtle flex items-center justify-between text-xs text-fg-muted">
++          <div className="flex items-center gap-2">
++            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
++            <span>
++              Simulating <strong className="text-fg-primary capitalize">{currentRole}</strong> perspective. You are previewing student placement milestones and mentorship services.
++            </span>
++          </div>
++          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-card border border-border-subtle text-accent font-semibold">
++            Role: {currentRole.toUpperCase()}
++          </span>
++        </div>
++      )}
++
+@@ -409,2 +444,22 @@
+-          {/* Mentors Cards Grid */}
+-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
++          {/* Mentors Cards Grid or Empty State */}
++          {mentors.length === 0 ? (
++            <div className="p-12 text-center rounded-2xl bg-card border border-border-subtle flex flex-col items-center justify-center space-y-3">
++              <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-fg-muted border border-border-subtle">
++                <Users className="w-6 h-6" />
++              </div>
++              <div className="space-y-1">
++                <h4 className="text-sm font-bold text-fg-primary">No peer mentors found</h4>
++                <p className="text-xs text-fg-muted max-w-sm">
++                  No mentors match your skill or company filter criteria. Try adjusting your search query or clear filters.
++                </p>
++              </div>
++              {(mentorSkillFilter || mentorCompanyFilter) && (
++                <button
++                  onClick={() => handleFilterMentors('', '')}
++                  className="px-3.5 py-1.5 rounded-lg bg-surface hover:bg-surface/80 border border-border-subtle text-xs font-semibold text-accent transition-colors cursor-pointer flex items-center gap-1.5"
++                >
++                  <RotateCcw className="w-3.5 h-3.5" />
++                  Clear Filters
++                </button>
++              )}
++            </div>
++          ) : (
++            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+@@ -479,2 +534,3 @@
+             </div>
++          )}
+@@ -568,2 +624,19 @@
+-          <div className="space-y-3">
++          {requests.length === 0 ? (
++            <div className="p-12 text-center rounded-2xl bg-card border border-border-subtle flex flex-col items-center justify-center space-y-3">
++              <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-fg-muted border border-border-subtle">
++                <Inbox className="w-6 h-6" />
++              </div>
++              <div className="space-y-1">
++                <h4 className="text-sm font-bold text-fg-primary">No mentorship requests</h4>
++                <p className="text-xs text-fg-muted max-w-sm">
++                  You have not sent or received any mentorship requests yet. Discover peer mentors in the Discovery tab to schedule a mock interview or resume review.
++                </p>
++              </div>
++              <button
++                onClick={() => setActiveTab('mentors')}
++                className="px-4 py-2 rounded-xl bg-accent text-canvas text-xs font-bold hover:bg-accent-hover transition-colors cursor-pointer flex items-center gap-1.5 shadow-lg"
++              >
++                <Users className="w-3.5 h-3.5" />
++                Find a Mentor
++              </button>
++            </div>
++          ) : (
++            <div className="space-y-3">
+@@ -633,2 +706,3 @@
+             </div>
++          )}
+@@ -690,2 +764,22 @@
+-          {/* Resources Cards */}
+-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++          {/* Resources Cards or Empty State */}
++          {resources.length === 0 ? (
++            <div className="p-12 text-center rounded-2xl bg-card border border-border-subtle flex flex-col items-center justify-center space-y-3">
++              <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center text-fg-muted border border-border-subtle">
++                <BookOpen className="w-6 h-6" />
++              </div>
++              <div className="space-y-1">
++                <h4 className="text-sm font-bold text-fg-primary">No resources found</h4>
++                <p className="text-xs text-fg-muted max-w-sm">
++                  No academic materials or past papers match your current search query or course filter.
++                </p>
++              </div>
++              {(searchQuery || selectedCourse !== 'All' || selectedCategory !== 'All') && (
++                <button
++                  onClick={() => handleFilterResources('', 'All', 'All')}
++                  className="px-3.5 py-1.5 rounded-lg bg-surface hover:bg-surface/80 border border-border-subtle text-xs font-semibold text-accent transition-colors cursor-pointer flex items-center gap-1.5"
++                >
++                  <RotateCcw className="w-3.5 h-3.5" />
++                  Reset Filters
++                </button>
++              )}
++            </div>
++          ) : (
++            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+@@ -769,2 +863,3 @@
+             </div>
++          )}

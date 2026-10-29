@@ -1,0 +1,237 @@
+UniVerse: An Intelligent, Sustainable, and Privacy-Aware Campus Ecosystem
+
+Duration: 12 HoursChallenge Category: Full-Stack Development, Artificial Intelligence, Graph Algorithms, Computer Vision, Sustainability Analytics, and Privacy Engineering
+
+1. Problem Statement
+
+Modern educational institutions face interconnected challenges involving student placement readiness, peer mentorship, academic resource management, campus transportation, energy consumption, digital distraction, and examination integrity. These activities are often managed through disconnected systems, resulting in inefficient resource utilization, limited collaboration, and reduced visibility into campus operations.
+
+Your challenge is to design and develop UniVerse, an intelligent, integrated campus ecosystem that combines student services, sustainable mobility, resource observability, privacy-aware digital wellbeing, and responsible examination monitoring into a unified platform.
+
+The proposed solution should use appropriate software engineering practices, data analytics, intelligent algorithms, and emerging technologies to improve the student experience, optimize campus resources, and support responsible digital operations.
+
+Within 12 hours, each team must develop a functional minimum viable product (MVP) demonstrating how these interconnected capabilities can operate together through a unified interface and shared data architecture.
+
+2. Core Objectives
+
+The solution should aim to:
+
+Centralize student placement preparation, peer mentorship, and academic resources.
+
+Optimize campus commuting through graph-based ride-pooling and route matching.
+
+Monitor simulated application workloads and estimate energy consumption and carbon emissions.
+
+Provide privacy-preserving browsing analytics to help students understand their digital focus patterns.
+
+Demonstrate responsible computer-vision-assisted examination monitoring that flags observable events for human review.
+
+3. Functional Requirements
+
+Module A: Student Intelligence and Academic Hub
+
+Student profiles with skills, interests, and placement goals.
+
+Placement preparation dashboard and progress tracking.
+
+Peer mentor discovery and mentorship requests.
+
+Searchable academic resource repository for notes, question papers, and study materials.
+
+Module B: Smart Campus Ride-Pooling
+
+Driver ride creation and passenger ride requests.
+
+Graph-based representation of campus locations and routes.
+
+Matching based on route compatibility, departure time, seat availability, and maximum detour.
+
+Dashboard showing estimated shared distance and potential travel-cost savings.
+
+Module C: Sustainable Computing Observatory
+
+Simulate at least three application services or workloads.
+
+Capture request counts, processing latency, and simulated resource utilization.
+
+Estimate energy consumption and associated carbon emissions using documented assumptions.
+
+Display service-level metrics and compare baseline and optimized scenarios.
+
+Module D: Privacy-Aware Digital Wellbeing
+
+Start and stop a user-controlled focus session.
+
+Categorize sample browsing events using user-defined rules.
+
+Display focus-session duration, context switches, and time spent on user-designated distracting sites.
+
+Provide pause, data inspection, and deletion controls.
+
+Process data locally where feasible and avoid collecting page contents, credentials, or unnecessary personal information.
+
+Module E: Responsible Examination Monitoring
+
+Process authorized sample examination footage or a controlled webcam feed.
+
+Detect people and flag at least two predefined observable events, such as repeated head turns or entry into a restricted zone.
+
+Record timestamps and confidence scores.
+
+Provide a dashboard for human review, dismissal, and incident resolution.
+
+Avoid automatically declaring misconduct or imposing penalties based on model output.
+
+4. Integration Requirements
+
+The five modules must be presented as parts of one coherent platform rather than five unrelated demonstrations.
+
+Teams should implement:
+
+A unified landing page or dashboard.
+
+Consistent navigation and user experience.
+
+A shared data model or clearly defined interfaces between modules.
+
+A common notification or activity mechanism where practical.
+
+Role-based access or simulated role-based workflows where appropriate.
+
+A clear architecture diagram showing how the modules communicate.
+
+The platform does not need to implement every module at production scale. Teams should prioritize functional integration, reliable core workflows, and a clear demonstration of how the components work together.
+
+5. Mandatory Deliverables
+
+At the end of the 12-hour event, every team must submit:
+
+A runnable integrated prototype.
+
+Source code in a version-controlled repository.
+
+A README with setup instructions, dependencies, and known limitations.
+
+An architecture diagram and a brief explanation of key algorithms.
+
+Sample data and test scenarios for the implemented modules.
+
+A presentation explaining the problem, design, implementation, results, and future scope.
+
+A live demonstration of the core workflows.
+
+Teams must disclose third-party libraries, pretrained models, AI-assisted development tools, and significant reused code according to the organizers' rules.
+
+6. Twelve-Hour Execution Plan
+
+Time
+
+Milestone
+
+Hour 0–1
+
+Understand requirements, assign roles, define MVP and architecture
+
+Hour 1–3
+
+Design UI, database schemas, APIs, algorithms, and sample data
+
+Hour 3–7
+
+Develop core modules and their primary workflows
+
+Hour 7–9
+
+Integrate modules, implement shared navigation, and test
+
+Hour 9–10
+
+Validate scenarios, fix defects, and refine the interface
+
+Hour 10–11
+
+Prepare documentation, architecture diagram, and presentation
+
+Hour 11–12
+
+Final demonstration, technical evaluation, and judging
+
+7. Evaluation Criteria — 100 Marks
+
+Criterion
+
+Marks
+
+Functional implementation and completeness
+
+25
+
+Technical depth and algorithmic correctness
+
+20
+
+Integration and software architecture
+
+15
+
+Innovation and practical impact
+
+10
+
+Testing, reliability, and validation
+
+10
+
+User experience and usability
+
+10
+
+Privacy, ethics, and responsible AI
+
+5
+
+Presentation and technical understanding
+
+5
+
+Total
+
+100
+
+8. Constraints and Guidelines
+
+Teams should use synthetic, public, or explicitly authorized data.
+
+Energy and carbon values must be identified as estimates unless supported by actual measurements.
+
+Browsing analytics must be voluntary and privacy-preserving.
+
+Examination monitoring must support human review and must not treat detected behavior as proof of cheating.
+
+The system should be designed to run within the available hardware, network, and time constraints.
+
+Open-source frameworks, APIs, and pretrained models may be used subject to the organizers' rules.
+
+Teams should clearly distinguish implemented functionality from simulated or proposed functionality.
+
+9. Expected Outcome
+
+The expected outcome is a functional integrated campus platform that demonstrates how software engineering, intelligent analytics, graph algorithms, computer vision, and privacy-aware design can address multiple campus challenges through a single application.
+
+The emphasis is on a working, explainable, and responsibly designed prototype—not on completing a production-grade system in 12 hours.
+
+Final Challenge: Build a unified campus ecosystem that helps students learn, connect, commute, and focus while making campus computing more sustainable and institutional monitoring more responsible.
+
+Recommended implementation strategy
+
+Since integrating all five areas in 12 hours is ambitious, I recommend that the organizers distinguish between the common platform requirement and the depth expected in each module.
+
+Core integration: All five modules should appear in the unified application, with meaningful navigation and sample data.
+
+Minimum implementation: Each module should demonstrate at least one functional workflow; computationally intensive features may use controlled sample inputs.
+
+Technical depth: Teams should implement the key algorithm in at least two modules, such as graph-based ride matching and computer-vision event detection.
+
+Judging: Award marks for working integration, correct technical reasoning, and responsible design—not simply for the number of screens.
+
+ 

@@ -1,0 +1,272 @@
+diff --git a/package.json b/package.json
+--- a/package.json
++++ b/package.json
+@@ -10,7 +10,7 @@
+     "build:server": "tsc -p server/tsconfig.json",
+     "build:client": "npm --prefix client run build",
+-    "start": "node dist/server/src/index.js",
++    "start": "node dist/server/index.js",
+     "seed": "tsx server/src/db/seed.ts",
+     "test": "vitest run"
+   },
+diff --git a/server/src/app.ts b/server/src/app.ts
+new file mode 100644
+--- /dev/null
++++ b/server/src/app.ts
+@@ -0,0 +1,87 @@
++import express, { Request, Response, NextFunction } from 'express';
++import cors from 'cors';
++import { getDb } from './db/connection.js';
++import { hubRouter } from './routes/hub.routes.js';
++import { commonRouter } from './routes/common.routes.js';
++
++const app = express();
++const PORT = process.env.PORT || 3001;
++
++// Global Middleware
++app.use(cors({
++  origin: true,
++  credentials: true,
++  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
++  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
++}));
++
++app.use(express.json({ limit: '10mb' }));
++app.use(express.urlencoded({ extended: true, limit: '10mb' }));
++
++// Logging Middleware
++app.use((req: Request, res: Response, next: NextFunction) => {
++  const start = Date.now();
++  res.on('finish', () => {
++    const duration = Date.now() - start;
++    if (process.env.NODE_ENV !== 'test') {
++      console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`);
++    }
++  });
++  next();
++});
++
++// Explicit health check endpoint
++app.get('/api/health', (req: Request, res: Response) => {
++  try {
++    const db = getDb();
++    const result = db.prepare('SELECT 1 as alive').get() as { alive: number };
++    const tables = db.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").get() as { count: number };
++
++    res.status(200).json({
++      status: 'ok',
++      timestamp: new Date().toISOString(),
++      service: 'UniVerse Campus OS Backend',
++      port: PORT,
++      database: {
++        connected: result?.alive === 1,
++        mode: 'better-sqlite3 / WAL',
++        tableCount: tables?.count || 0
++      },
++      version: '1.0.0'
++    });
++  } catch (err: any) {
++    res.status(500).json({
++      status: 'degraded',
++      error: err.message,
++      timestamp: new Date().toISOString()
++    });
++  }
++});
++
++// Mount Routes
++app.use('/api/hub', hubRouter);
++app.use('/api/activity', commonRouter);
++app.use('/api/notifications', commonRouter);
++app.use('/api/users', commonRouter);
++app.use('/api', commonRouter);
++
++// 404 Handler (Express 5 compatible - without invalid regex wildcards)
++app.use((req: Request, res: Response) => {
++  res.status(404).json({
++    error: 'Endpoint Not Found',
++    path: req.originalUrl,
++    method: req.method
++  });
++});
++
++// Centralized Error Handler
++app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
++  console.error(`[Unhandled Error] ${req.method} ${req.url}:`, err);
++  const status = typeof err.status === 'number' ? err.status : 500;
++  res.status(status).json({
++    error: {
++      code: err.code || 'INTERNAL_ERROR',
++      message: err.message || 'Internal Server Error'
++    },
++    status
++  });
++});
++
++export { app };
++export default app;
+diff --git a/server/src/index.ts b/server/src/index.ts
+--- a/server/src/index.ts
++++ b/server/src/index.ts
+@@ -1,88 +1,7 @@
+-import express, { Request, Response, NextFunction } from 'express';
+-import cors from 'cors';
+-import { getDb, initDb, closeDb } from './db/connection.js';
+-import { hubRouter } from './routes/hub.routes.js';
+-import { commonRouter } from './routes/common.routes.js';
+-
+-const app = express();
++import { app } from './app.js';
++import { initDb, closeDb } from './db/connection.js';
++
+ const PORT = process.env.PORT || 3001;
+-
+-// Global Middleware
+-app.use(cors({
+-  origin: true,
+-  credentials: true,
+-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+-}));
+-
+-app.use(express.json({ limit: '10mb' }));
+-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+-
+-// Logging Middleware
+-app.use((req: Request, res: Response, next: NextFunction) => {
+-  const start = Date.now();
+-  res.on('finish', () => {
+-    const duration = Date.now() - start;
+-    if (process.env.NODE_ENV !== 'test') {
+-      console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`);
+-    }
+-  });
+-  next();
+-});
+-
+-// Explicit health check endpoint
+-app.get('/api/health', (req: Request, res: Response) => {
+-  try {
+-    const db = getDb();
+-    const result = db.prepare('SELECT 1 as alive').get() as { alive: number };
+-    const tables = db.prepare("SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").get() as { count: number };
+-
+-    res.status(200).json({
+-      status: 'ok',
+-      timestamp: new Date().toISOString(),
+-      service: 'UniVerse Campus OS Backend',
+-      port: PORT,
+-      database: {
+-        connected: result?.alive === 1,
+-        mode: 'better-sqlite3 / WAL',
+-        tableCount: tables?.count || 0
+-      },
+-      version: '1.0.0'
+-    });
+-  } catch (err: any) {
+-    res.status(500).json({
+-      status: 'degraded',
+-      error: err.message,
+-      timestamp: new Date().toISOString()
+-    });
+-  }
+-});
+-
+-// Mount Routes
+-app.use('/api/hub', hubRouter);
+-app.use('/api/activity', commonRouter);
+-app.use('/api/notifications', commonRouter);
+-app.use('/api/users', commonRouter);
+-app.use('/api', commonRouter);
+-
+-// 404 Handler (Express 5 compatible - without invalid regex wildcards)
+-app.use((req: Request, res: Response) => {
+-  res.status(404).json({
+-    error: 'Endpoint Not Found',
+-    path: req.originalUrl,
+-    method: req.method
+-  });
+-});
+-
+-// Centralized Error Handler
+-app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+-  console.error(`[Unhandled Error] ${req.method} ${req.url}:`, err);
+-  const status = typeof err.status === 'number' ? err.status : 500;
+-  res.status(status).json({
+-    error: {
+-      code: err.code || 'INTERNAL_ERROR',
+-      message: err.message || 'Internal Server Error'
+-    },
+-    status
+-  });
+-});
+ 
+ export function startServer(port: number | string = PORT): Promise<any> {
+@@ -120,3 +39,4 @@
+ }
+ 
++export { app, startServer };
+ export default app;
+diff --git a/server/src/routes/hub.routes.ts b/server/src/routes/hub.routes.ts
+--- a/server/src/routes/hub.routes.ts
++++ b/server/src/routes/hub.routes.ts
+@@ -395,4 +395,14 @@
+   }
+ 
++  // Validate mentor existence
++  if (!mentorRecord) {
++    res.status(404).json({
++      error: {
++        code: 'NOT_FOUND',
++        message: `Mentor '${mentorId}' not found`
++      }
++    });
++    return;
++  }
++
+   const effectiveMentorDbId = mentorRecord.id;
+   const effectiveMentorUserId = mentorRecord.user_id;
+@@ -578,4 +588,5 @@
+   `).run(
+     activityId,
+     request.mentee_id,
++    actionType,
+     JSON.stringify({ requestId, status, notes: updatedNotes }),
+@@ -779,4 +790,11 @@
+   }
+ 
++  const effectiveUserId = userId || 'usr_student_1';
++  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(effectiveUserId) as any;
++  if (!user) {
++    res.status(404).json({ error: { code: 'NOT_FOUND', message: `User '${effectiveUserId}' not found` } });
++    return;
++  }
++
+   // Check if user already rated this resource
+-  const existingRating = db.prepare('SELECT rating FROM resource_ratings WHERE resource_id = ? AND user_id = ?').get(resourceId, userId) as any;
++  const existingRating = db.prepare('SELECT rating FROM resource_ratings WHERE resource_id = ? AND user_id = ?').get(resourceId, effectiveUserId) as any;
+@@ -798,3 +816,3 @@
+       ON CONFLICT(resource_id, user_id) DO UPDATE SET rating = excluded.rating
+-    `).run('rat_' + Math.random().toString(36).substring(2, 10), resourceId, userId, numRating, new Date().toISOString());
++    `).run('rat_' + Math.random().toString(36).substring(2, 10), resourceId, effectiveUserId, numRating, new Date().toISOString());
+diff --git a/server/src/routes/common.routes.ts b/server/src/routes/common.routes.ts
+--- a/server/src/routes/common.routes.ts
++++ b/server/src/routes/common.routes.ts
+@@ -135,2 +135,16 @@
+   }
+ 
++  // Validate userId existence if provided
++  if (userId) {
++    const user = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
++    if (!user) {
++      res.status(404).json({
++        error: {
++          code: 'NOT_FOUND',
++          message: `User '${userId}' not found`
++        }
++      });
++      return;
++    }
++  }
++
+   const activityId = 'act_' + Math.random().toString(36).substring(2, 10);

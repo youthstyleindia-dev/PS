@@ -1,0 +1,218 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { UserRole } from '../types';
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+  department?: string;
+  year_of_study?: number;
+  bio?: string;
+  is_active?: boolean;
+  permissions?: Record<string, boolean>;
+}
+
+interface AuthContextType {
+  user: AuthUser | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  demoLogin: (role: UserRole) => Promise<void>;
+  register: (data: { name: string; email: string; password: string; role?: UserRole; department?: string; year_of_study?: number }) => Promise<void>;
+  logout: () => void;
+  switchRole: (role: UserRole) => Promise<void>;
+  error: string | null;
+  clearError: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const TOKEN_KEY = 'universe_auth_token';
+const USER_KEY = 'universe_auth_user';
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const saved = localStorage.getItem(USER_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    // Default demo fallback persona: Aarav Sharma (Student)
+    return {
+      id: 'usr_student_1',
+      name: 'Aarav Sharma',
+      email: 'aarav.sharma@campus.edu',
+      role: 'student',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
+      department: 'Computer Science & Engineering',
+      year_of_study: 4,
+      is_active: true
+    };
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Validate session and fetch fresh profile on mount
+  useEffect(() => {
+    const initAuth = async () => {
+      const activeToken = localStorage.getItem(TOKEN_KEY);
+      if (activeToken) {
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${activeToken}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.data) {
+              setUser(data.data);
+              localStorage.setItem(USER_KEY, JSON.stringify(data.data));
+            }
+          } else {
+            // Token expired or invalid
+            localStorage.removeItem(TOKEN_KEY);
+            setToken(null);
+          }
+        } catch {
+          // Keep local state if server offline
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || 'Login failed');
+      }
+
+      setToken(data.data.token);
+      setUser(data.data.user);
+      localStorage.setItem(TOKEN_KEY, data.data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      throw err;
+    }
+  };
+
+  const demoLogin = async (role: UserRole) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/demo-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || 'Demo login failed');
+      }
+
+      setToken(data.data.token);
+      setUser(data.data.user);
+      localStorage.setItem(TOKEN_KEY, data.data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+    } catch (err: any) {
+      setError(err.message || 'Demo login failed');
+      throw err;
+    }
+  };
+
+  const register = async (formData: { name: string; email: string; password: string; role?: UserRole; department?: string; year_of_study?: number }) => {
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || 'Registration failed');
+      }
+
+      setToken(data.data.token);
+      setUser(data.data.user);
+      localStorage.setItem(TOKEN_KEY, data.data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+      throw err;
+    }
+  };
+
+  const logout = () => {
+    if (token) {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
+    setToken(null);
+    localStorage.removeItem(TOKEN_KEY);
+    // Reset to student default persona
+    const defaultUser: AuthUser = {
+      id: 'usr_student_1',
+      name: 'Aarav Sharma',
+      email: 'aarav.sharma@campus.edu',
+      role: 'student',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
+      department: 'Computer Science & Engineering',
+      year_of_study: 4,
+      is_active: true
+    };
+    setUser(defaultUser);
+    localStorage.setItem(USER_KEY, JSON.stringify(defaultUser));
+  };
+
+  const switchRole = async (role: UserRole) => {
+    await demoLogin(role);
+  };
+
+  const clearError = () => setError(null);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isAuthenticated: !!token || !!user,
+        isLoading,
+        login,
+        demoLogin,
+        register,
+        logout,
+        switchRole,
+        error,
+        clearError
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
