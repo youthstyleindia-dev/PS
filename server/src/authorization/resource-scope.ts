@@ -21,7 +21,7 @@ export function requireResourceOwner(paramName: string = 'userId') {
       return next();
     }
 
-    if (process.env.NODE_ENV === 'test' && !req.headers.authorization) {
+    if (process.env.NODE_ENV === 'test' && process.env.ENABLE_CONTRACT_TEST_BYPASS === 'true' && !req.headers.authorization) {
       return next();
     }
 
@@ -84,7 +84,7 @@ export function requireAssignedExamSession(sessionParamName: string = 'sessionId
       return next();
     }
 
-    if (process.env.NODE_ENV === 'test' && !req.headers.authorization) {
+    if (process.env.NODE_ENV === 'test' && process.env.ENABLE_CONTRACT_TEST_BYPASS === 'true' && !req.headers.authorization) {
       return next();
     }
 

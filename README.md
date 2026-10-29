@@ -1,11 +1,12 @@
 # UniVerse: An Intelligent, Sustainable, and Privacy-Aware Campus Ecosystem
 
-[![Tests](https://img.shields.io/badge/Tests-215%20Passing-brightgreen?style=flat-square)](./docs/TEST_RESULTS.md)
+[![Tests](https://img.shields.io/badge/Tests-229%20Passing-brightgreen?style=flat-square)](./docs/security-audit/05_TEST_EVIDENCE.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-v19-61dafb?style=flat-square)](https://react.dev/)
 [![Express](https://img.shields.io/badge/Express-v5-lightgrey?style=flat-square)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=flat-square)](https://www.sqlite.org/)
-[![RBAC](https://img.shields.io/badge/RBAC-6%20Roles%20Enforced-orange?style=flat-square)](./docs/ROLE_PERMISSION_MATRIX.md)
+[![RBAC](https://img.shields.io/badge/RBAC-6%20Roles%20Enforced-orange?style=flat-square)](./docs/security-audit/03_ROLE_PERMISSION_MATRIX.md)
+[![Security Audit](https://img.shields.io/badge/Security%20Audit-SEC--01%20to%20SEC--10%20Remediated-brightgreen?style=flat-square)](./docs/security-audit/02_FINDINGS.md)
 [![Design System](https://img.shields.io/badge/Design-Google%20Stitch%20Brutalism-003FE1?style=flat-square)](./docs/COMPONENT_REUSE_REPORT.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
@@ -22,7 +23,7 @@ UniVerse is completely self-contained and runs locally on macOS, Linux, or Windo
 # 1. Clone & install root and client dependencies
 npm install && cd client && npm install && cd ..
 
-# 2. Run automated test suite (215 tests across 13 suites in ~1.9 seconds)
+# 2. Run automated test suite (229 tests across 14 suites in ~1.8 seconds)
 npm test
 
 # 3. Seed SQLite database with deterministic campus data & canonical personas

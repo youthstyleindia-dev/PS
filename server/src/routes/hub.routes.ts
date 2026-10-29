@@ -480,7 +480,7 @@ hubRouter.post('/mentorship-requests', (req: Request, res: Response): void => {
  * GET /api/hub/mentorship-requests/:userId
  * Fetch sent and received requests for a user
  */
-hubRouter.get('/mentorship-requests/:userId', (req: Request, res: Response): void => {
+hubRouter.get('/mentorship-requests/:userId', requireResourceOwner('userId'), (req: Request, res: Response): void => {
   const { userId } = req.params;
   const db = getDb();
 
@@ -561,6 +561,22 @@ hubRouter.patch('/mentorship-requests/:requestId', (req: Request, res: Response)
       }
     });
     return;
+  }
+
+  if (req.user) {
+    const mentor = db.prepare('SELECT user_id FROM mentors WHERE id = ?').get(request.mentor_id) as any;
+    const isMentorOwner = mentor && req.user.sub === mentor.user_id;
+    const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+
+    if (!isMentorOwner && !isAdmin) {
+      res.status(403).json({
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Access denied: Only the designated mentor or an administrator can update this mentorship request.'
+        }
+      });
+      return;
+    }
   }
 
   const now = new Date().toISOString();

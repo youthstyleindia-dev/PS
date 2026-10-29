@@ -171,7 +171,7 @@ ridesRouter.post('/offers', requireRole('driver', 'admin'), (req: Request, res: 
     VALUES (?, ?, ?, ?, ?)
   `).run(
     genId('act'),
-    driverId,
+    effectiveDriverId,
     'rides',
     'OFFER_CREATED',
     `Offered ride from ${normalizedOrigin} to ${normalizedDest} (${seatsNum} seats)`
@@ -223,8 +223,24 @@ ridesRouter.post('/requests', (req: Request, res: Response) => {
     maxDetourRatio,
   } = req.body;
 
+  let effectivePassengerId = passengerId;
+  if (req.user) {
+    const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+    if (!isAdmin) {
+      if (passengerId && passengerId !== req.user.sub) {
+        return res.status(403).json({
+          error: {
+            code: 'FORBIDDEN',
+            message: `Access denied: Cannot submit ride requests on behalf of another passenger ('${passengerId}').`
+          }
+        });
+      }
+      effectivePassengerId = req.user.sub;
+    }
+  }
+
   const time = desiredDepartureTime || desiredTime;
-  if (!passengerId || !originNodeId || !destinationNodeId || !time) {
+  if (!effectivePassengerId || !originNodeId || !destinationNodeId || !time) {
     return res.status(400).json({ error: 'Missing required ride request fields' });
   }
 
@@ -255,7 +271,7 @@ ridesRouter.post('/requests', (req: Request, res: Response) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
   `).run(
     id,
-    passengerId,
+    effectivePassengerId,
     dbOrigin,
     dbDest,
     time,

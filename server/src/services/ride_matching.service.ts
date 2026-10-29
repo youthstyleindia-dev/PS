@@ -262,50 +262,58 @@ export class RideMatchingService {
     requestId: string,
     seatsBooked?: number
   ): BookingResult {
-    const offer = db.prepare('SELECT * FROM ride_offers WHERE id = ?').get(offerId) as any;
-    const request = db.prepare('SELECT * FROM ride_requests WHERE id = ?').get(requestId) as any;
-    if (!offer || !request) {
-      throw new Error('Offer or request not found');
-    }
-
-    const seats = seatsBooked || request.seats_needed || 1;
-    if (offer.available_seats < seats) {
-      throw new Error('Not enough available seats (Insufficient available seats)');
-    }
-
-    const match = this.matchRide(
-      {
-        id: offer.id,
-        driverId: offer.driver_id,
-        originNodeId: offer.origin_node_id,
-        destinationNodeId: offer.destination_node_id,
-        departureTime: offer.departure_time,
-        totalSeats: offer.total_seats,
-        availableSeats: offer.available_seats,
-        vehicleType: offer.vehicle_type,
-      },
-      {
-        id: request.id,
-        passengerId: request.passenger_id,
-        originNodeId: request.origin_node_id,
-        destinationNodeId: request.destination_node_id,
-        desiredTime: request.desired_departure_time || request.desired_time || '09:00',
-        seatsNeeded: seats,
-        maxDetourRatio: request.max_detour_ratio,
-      }
-    );
-
-    if (!match.matched) {
-      throw new Error(`Ride match failed detour constraints: ${match.reason}`);
-    }
-
-    const matchId = genId('match');
-    const bookingId = genId('bk');
-    const newSeats = offer.available_seats - seats;
-
     const executeBooking = db.transaction(() => {
-      // 1. Decrement available seats in offer
-      db.prepare('UPDATE ride_offers SET available_seats = ? WHERE id = ?').run(newSeats, offerId);
+      const offer = db.prepare('SELECT * FROM ride_offers WHERE id = ?').get(offerId) as any;
+      const request = db.prepare('SELECT * FROM ride_requests WHERE id = ?').get(requestId) as any;
+      if (!offer || !request) {
+        throw new Error('Offer or request not found');
+      }
+
+      const seats = seatsBooked || request.seats_needed || 1;
+      if (offer.available_seats < seats) {
+        throw new Error('Not enough available seats (Insufficient available seats)');
+      }
+
+      const match = this.matchRide(
+        {
+          id: offer.id,
+          driverId: offer.driver_id,
+          originNodeId: offer.origin_node_id,
+          destinationNodeId: offer.destination_node_id,
+          departureTime: offer.departure_time,
+          totalSeats: offer.total_seats,
+          availableSeats: offer.available_seats,
+          vehicleType: offer.vehicle_type,
+        },
+        {
+          id: request.id,
+          passengerId: request.passenger_id,
+          originNodeId: request.origin_node_id,
+          destinationNodeId: request.destination_node_id,
+          desiredTime: request.desired_departure_time || request.desired_time || '09:00',
+          seatsNeeded: seats,
+          maxDetourRatio: request.max_detour_ratio,
+        }
+      );
+
+      if (!match.matched) {
+        throw new Error(`Ride match failed detour constraints: ${match.reason}`);
+      }
+
+      // 1. Atomic decrement with available_seats guard
+      const updateResult = db.prepare(
+        'UPDATE ride_offers SET available_seats = available_seats - ? WHERE id = ? AND available_seats >= ?'
+      ).run(seats, offerId, seats);
+
+      if (updateResult.changes === 0) {
+        throw new Error('Not enough available seats (Insufficient available seats)');
+      }
+
+      const updatedOffer = db.prepare('SELECT available_seats FROM ride_offers WHERE id = ?').get(offerId) as any;
+      const newSeats = updatedOffer ? updatedOffer.available_seats : (offer.available_seats - seats);
+
+      const matchId = genId('match');
+      const bookingId = genId('bk');
 
       // 2. Update request status to completed / booked
       db.prepare("UPDATE ride_requests SET status = 'completed' WHERE id = ?").run(requestId);
@@ -363,6 +371,7 @@ export class RideMatchingService {
         newSeats,
         farePaid,
         driverEarnings,
+        match,
       };
     });
 
@@ -373,8 +382,8 @@ export class RideMatchingService {
       bookingId: booked.bookingId,
       matchId: booked.matchId,
       seatsRemaining: booked.newSeats,
-      sharedKm: match.sharedKm,
-      carbonSavedKg: match.carbonSavedKg,
+      sharedKm: booked.match.sharedKm,
+      carbonSavedKg: booked.match.carbonSavedKg,
       fareCharged: booked.farePaid,
       driverEarnings: booked.driverEarnings,
       provenance: '[ESTIMATED METRIC]',

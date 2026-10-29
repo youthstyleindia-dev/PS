@@ -562,17 +562,27 @@ export class AuthService {
       throw new Error('User not found');
     }
 
-    // Role-based permissions matrix
+    // Role-based permissions matrix with multi-role assignment support
+    const activeAssignments = db.prepare(`SELECT role_key FROM role_assignments WHERE user_id = ? AND status = 'active'`).all(userId) as { role_key: string }[];
+    const userRoles = new Set([user.role, ...activeAssignments.map(a => a.role_key.toLowerCase())]);
+
+    const isStudent = userRoles.has('student');
+    const isAdmin = userRoles.has('admin');
+    const isDriver = userRoles.has('driver');
+    const isProctor = userRoles.has('proctor');
+    const isWarden = userRoles.has('warden');
+    const isTa = userRoles.has('ta');
+
     const permissions = {
-      canAccessAcademicHub: true,
-      canBookRides: true,
-      canOfferRides: user.role === 'driver' || user.role === 'admin',
+      canAccessAcademicHub: isStudent || isTa || isAdmin,
+      canBookRides: isStudent || isTa || isWarden || isAdmin,
+      canOfferRides: isDriver || isAdmin,
       canViewSustainability: true,
-      canModifyWorkloadScaling: user.role === 'admin',
-      canAccessWellbeing: true,
-      canAccessProctorConsole: user.role === 'proctor' || user.role === 'admin',
-      canAuditExams: user.role === 'proctor' || user.role === 'admin',
-      canManageSystem: user.role === 'admin'
+      canModifyWorkloadScaling: isAdmin,
+      canAccessWellbeing: isStudent || isAdmin,
+      canAccessProctorConsole: isProctor || isAdmin,
+      canAuditExams: isProctor || isAdmin,
+      canManageSystem: isAdmin
     };
 
     let profile: any = null;

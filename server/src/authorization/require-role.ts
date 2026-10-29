@@ -20,8 +20,8 @@ export function requireRole(...allowedRoles: CanonicalRole[]) {
       return next();
     }
 
-    // Allow unauthenticated calls only if legacy test environment and no authorization header was supplied
-    if (process.env.NODE_ENV === 'test' && !req.headers.authorization) {
+    // Allow unauthenticated calls only if explicit contract test harness flag is enabled and no authorization header was supplied
+    if (process.env.NODE_ENV === 'test' && process.env.ENABLE_CONTRACT_TEST_BYPASS === 'true' && !req.headers.authorization) {
       return next();
     }
 

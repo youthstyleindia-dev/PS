@@ -40,7 +40,7 @@ examsRouter.get('/sessions', requireRole('proctor', 'admin'), (_req: Request, re
 });
 
 // POST /api/exams/sessions
-examsRouter.post('/sessions', (req: Request, res: Response) => {
+examsRouter.post('/sessions', requireRole('proctor', 'admin'), (req: Request, res: Response) => {
   const { title, courseId, courseCode, studentId, scheduledStart, scheduledEnd } = req.body;
   if (!title || (!courseId && !courseCode) || !studentId) {
     return res.status(400).json({ error: 'Missing title, courseId, or studentId' });
@@ -93,8 +93,39 @@ examsRouter.post('/events', (req: Request, res: Response) => {
 });
 
 // GET /api/exams/pending-reviews
-examsRouter.get('/pending-reviews', requireRole('proctor', 'admin'), (_req: Request, res: Response) => {
+examsRouter.get('/pending-reviews', requireRole('proctor', 'admin'), (req: Request, res: Response) => {
   const db = getDb();
+  const user = req.user;
+  const isAdmin = user && (user.role === 'admin' || (user.roles && user.roles.includes('admin')));
+
+  // Enforce session assignment boundary if user is not an admin
+  if (user && !isAdmin) {
+    const totalAssignments = db.prepare(`SELECT count(*) as count FROM exam_session_assignments WHERE status = 'active'`).get() as { count: number };
+    if (totalAssignments && totalAssignments.count > 0) {
+      const assigned = db.prepare(`
+        SELECT session_id FROM exam_session_assignments
+        WHERE proctor_id = ? AND status = 'active'
+      `).all(user.sub) as { session_id: string }[];
+
+      if (assigned.length === 0) {
+        return res.json([]);
+      }
+
+      const sessionIds = assigned.map(a => a.session_id);
+      const placeholders = sessionIds.map(() => '?').join(',');
+      const events = db.prepare(`
+        SELECT oe.*, es.title as exam_title, es.course_id as course_code, u.name as student_name
+        FROM observation_events oe
+        JOIN exam_sessions es ON oe.exam_session_id = es.id
+        JOIN users u ON es.student_id = u.id
+        WHERE oe.review_status = 'PENDING_REVIEW'
+          AND oe.exam_session_id IN (${placeholders})
+        ORDER BY oe.timestamp DESC
+      `).all(...sessionIds);
+      return res.json(events);
+    }
+  }
+
   const events = db.prepare(`
     SELECT oe.*, es.title as exam_title, es.course_id as course_code, u.name as student_name
     FROM observation_events oe

@@ -77,6 +77,7 @@ export interface RoleAssignment {
 }
 
 export const LEGACY_ROLE_MAP: Record<string, CanonicalRole> = {
+  // Lowercase & colloquial variants
   student: 'student',
   driver: 'driver',
   proctor: 'proctor',
@@ -89,7 +90,23 @@ export const LEGACY_ROLE_MAP: Record<string, CanonicalRole> = {
   ta: 'ta_faculty',
   ta_faculty: 'ta_faculty',
   warden: 'warden',
-  'campus staff': 'warden'
+  'campus staff': 'warden',
+
+  // Uppercase canonical variants
+  STUDENT: 'student',
+  TA: 'ta_faculty',
+  WARDEN: 'warden',
+  TRANSIT_DRIVER: 'driver',
+  EXAM_PROCTOR: 'proctor',
+  SYSTEM_ADMIN: 'admin',
+  DRIVER: 'driver',
+  PROCTOR: 'proctor',
+  ADMIN: 'admin',
+  FACULTY: 'ta_faculty',
+  TA_FACULTY: 'ta_faculty',
+  REVIEWER: 'proctor',
+  'CAMPUS STAFF': 'warden',
+  CAMPUS_STAFF: 'warden'
 };
 
 export const ROLE_PERMISSIONS: Record<CanonicalRole, Permission[]> = {

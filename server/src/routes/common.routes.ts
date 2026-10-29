@@ -170,18 +170,29 @@ commonRouter.post('/', (req: Request, res: Response): void => {
 
 /**
  * GET /api/notifications
- * Fetch notifications for user
+ * Fetch notifications for user (strictly scoped to req.user unless admin)
  */
 commonRouter.get('/notifications', (req: Request, res: Response): void => {
-  const { userId = 'usr_student_1' } = req.query;
   const db = getDb();
+  let targetUserId = (req.query.userId as string) || 'usr_student_1';
+
+  if (req.user) {
+    const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+    if (!isAdmin) {
+      targetUserId = req.user.sub;
+    } else if (req.query.userId) {
+      targetUserId = req.query.userId as string;
+    } else {
+      targetUserId = req.user.sub;
+    }
+  }
 
   const notifications = db.prepare(`
     SELECT id, user_id as userId, title, message, module, type, is_read as isRead, link_url as linkUrl, created_at as createdAt
     FROM notifications
     WHERE user_id = ?
     ORDER BY created_at DESC
-  `).all(userId) as any[];
+  `).all(targetUserId) as any[];
 
   res.json({
     total: notifications.length,

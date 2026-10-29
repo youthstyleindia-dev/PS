@@ -19,14 +19,15 @@ function toTitleCaseCategory(cat: string): 'Productive' | 'Distracting' | 'Neutr
 
 // POST /api/wellbeing/sessions/start
 wellbeingRouter.post('/sessions/start', (req: Request, res: Response) => {
-  const { userId, targetDurationMins, goal } = req.body;
-  if (!userId || !targetDurationMins) {
+  const { targetDurationMins, goal } = req.body;
+  const effectiveUserId = (req.user && req.user.sub) ? req.user.sub : req.body.userId;
+  if (!effectiveUserId || !targetDurationMins) {
     return res.status(400).json({ error: 'userId and targetDurationMins are required' });
   }
 
   const db = getDb();
   // Check for existing active session
-  const active = db.prepare("SELECT id FROM focus_sessions WHERE user_id = ? AND status = 'active'").get(userId);
+  const active = db.prepare("SELECT id FROM focus_sessions WHERE user_id = ? AND status = 'active'").get(effectiveUserId);
   if (active) {
     return res.status(409).json({ error: 'User already has an active focus session' });
   }
@@ -36,13 +37,13 @@ wellbeingRouter.post('/sessions/start', (req: Request, res: Response) => {
   db.prepare(`
     INSERT INTO focus_sessions (id, user_id, start_time, target_duration_mins, goal, status)
     VALUES (?, ?, ?, ?, ?, 'active')
-  `).run(id, userId, now, targetDurationMins, goal || 'Deep Work Study Session');
+  `).run(id, effectiveUserId, now, targetDurationMins, goal || 'Deep Work Study Session');
 
   // Activity log
   db.prepare(`
     INSERT INTO activity_log (id, user_id, module, action, details)
     VALUES (?, ?, ?, ?, ?)
-  `).run(genId('act'), userId, 'wellbeing', 'FOCUS_STARTED', `Started ${targetDurationMins}m focus session: ${goal || 'General Study'}`);
+  `).run(genId('act'), effectiveUserId, 'wellbeing', 'FOCUS_STARTED', `Started ${targetDurationMins}m focus session: ${goal || 'General Study'}`);
 
   res.status(201).json({ success: true, sessionId: id, status: 'active', targetDurationMins });
 });
@@ -53,6 +54,14 @@ wellbeingRouter.post('/sessions/:sessionId/pause', (req: Request, res: Response)
   const db = getDb();
   const session = db.prepare('SELECT * FROM focus_sessions WHERE id = ?').get(req.params.sessionId) as any;
   if (!session) return res.status(404).json({ error: 'Session not found' });
+
+  if (req.user) {
+    const isOwner = req.user.sub === session.user_id;
+    const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied: You cannot control another student focus session.' } });
+    }
+  }
 
   const newStatus = action === 'pause' ? 'paused' : 'active';
   db.prepare('UPDATE focus_sessions SET status = ? WHERE id = ?').run(newStatus, req.params.sessionId);
@@ -65,6 +74,14 @@ wellbeingRouter.post('/sessions/:sessionId/stop', (req: Request, res: Response) 
   const db = getDb();
   const session = db.prepare('SELECT * FROM focus_sessions WHERE id = ?').get(req.params.sessionId) as any;
   if (!session) return res.status(404).json({ error: 'Session not found' });
+
+  if (req.user) {
+    const isOwner = req.user.sub === session.user_id;
+    const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Access denied: You cannot stop another student focus session.' } });
+    }
+  }
 
   const events = db.prepare('SELECT * FROM browsing_events WHERE session_id = ?').all(req.params.sessionId) as any[];
   const totalSecs = events.reduce((a, b) => a + (b.duration_seconds || 0), 0) || (session.target_duration_mins * 60);
@@ -108,6 +125,20 @@ wellbeingRouter.get('/sessions/:sessionId', (req: Request, res: Response) => {
   const db = getDb();
   const session = db.prepare('SELECT * FROM focus_sessions WHERE id = ?').get(req.params.sessionId) as any;
   if (!session) return res.status(404).json({ error: 'Session not found' });
+
+  // Ownership verification: caller must own session or be admin
+  if (req.user) {
+    const isOwner = req.user.sub === session.user_id;
+    const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Access denied: You cannot inspect private focus sessions of other students.'
+        }
+      });
+    }
+  }
 
   const events = db.prepare('SELECT * FROM browsing_events WHERE session_id = ? ORDER BY timestamp ASC').all(req.params.sessionId) as any[];
   res.json({ session, events });
