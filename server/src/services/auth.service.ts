@@ -23,7 +23,9 @@ export const DEMO_ACCOUNTS: Record<string, { email: string; name: string }> = {
   student: { email: 'aarav.sharma@campus.edu', name: 'Aarav Sharma' },
   driver: { email: 'vikram.rao@campus.edu', name: 'Vikram Rao' },
   proctor: { email: 'm.sundaram@campus.edu', name: 'Dr. Meenakshi Sundaram' },
-  faculty: { email: 'm.sundaram@campus.edu', name: 'Dr. Meenakshi Sundaram' },
+  faculty: { email: 'dr.patel@campus.edu', name: 'Dr. Priya Patel' },
+  ta_faculty: { email: 'dr.patel@campus.edu', name: 'Dr. Priya Patel' },
+  warden: { email: 'warden@campus.edu', name: 'Campus Residential Warden' },
   admin: { email: 'admin@campus.edu', name: 'Campus IT Operations' }
 };
 
@@ -45,11 +47,12 @@ export class AuthService {
   /**
    * Issue a signed JWT token containing standard claims.
    */
-  static signToken(user: { id: string; email: string; role: UserRole; name: string; department?: string }): string {
+  static signToken(user: { id: string; email: string; role: UserRole; roles?: UserRole[]; name: string; department?: string }): string {
     const payload: JwtTokenPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
+      roles: user.roles || [user.role],
       name: user.name,
       department: user.department
     };
@@ -151,11 +154,11 @@ export class AuthService {
       throw new Error('An account with this email address already exists');
     }
 
-    const role: UserRole = dto.role && ['student', 'driver', 'proctor', 'admin'].includes(dto.role)
-      ? dto.role
-      : 'student';
+    // Enforce strict least privilege: public self-registration is strictly provisioned as 'student'.
+    // Client-supplied privileged roles (admin, proctor, driver, etc.) are strictly ignored/neutralized.
+    const role: UserRole = 'student';
 
-    const userId = `usr_${role}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const userId = `usr_student_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const passwordHash = await this.hashPassword(dto.password);
     const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(dto.name.trim())}`;
 
@@ -175,20 +178,25 @@ export class AuthService {
       dto.bio || `${role.charAt(0).toUpperCase() + role.slice(1)} account at UniVerse Campus OS.`
     );
 
+    // 2B. Insert initial role_assignments record
+    db.prepare(`
+      INSERT INTO role_assignments (id, user_id, role_key, status, reason)
+      VALUES (?, ?, 'student', 'active', 'Self-registered student account')
+    `).run(`ra_${userId}_student`, userId);
+
     // 3. Auto-initialize role-specific profile
-    if (role === 'student') {
-      db.prepare(`
-        INSERT INTO student_profiles (user_id, skills, interests, target_role, readiness_score, gpa)
-        VALUES (?, '["Python", "Algorithms"]', '["Artificial Intelligence", "Campus Mobility"]', 'Software Engineering Associate', 25, 3.5)
-      `).run(userId);
-    }
+    db.prepare(`
+      INSERT INTO student_profiles (user_id, skills, interests, target_role, readiness_score, gpa)
+      VALUES (?, '["Python", "Algorithms"]', '["Artificial Intelligence", "Campus Mobility"]', 'Software Engineering Associate', 25, 3.5)
+    `).run(userId);
 
     // 4. Issue Token & Session
     const userPayload: AuthUser = {
       id: userId,
       name: dto.name.trim(),
       email: cleanEmail,
-      role,
+      role: 'student',
+      roles: ['student'],
       avatar,
       department: dto.department || 'General Campus Studies',
       year_of_study: dto.year_of_study || 1,
@@ -305,11 +313,30 @@ export class AuthService {
     // Update last_login
     db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
 
+    // Fetch all active assigned roles for this user
+    let assignedRoles: UserRole[] = [user.role];
+    try {
+      const activeRows = db.prepare(`
+        SELECT role_key FROM role_assignments
+        WHERE user_id = ? AND status = 'active'
+      `).all(user.id) as Array<{ role_key: string }>;
+
+      if (activeRows.length > 0) {
+        assignedRoles = Array.from(new Set([
+          user.role as UserRole,
+          ...activeRows.map(r => r.role_key as UserRole)
+        ]));
+      }
+    } catch {
+      // Use primary role if table not yet migrated
+    }
+
     const userPayload: AuthUser = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      roles: assignedRoles,
       avatar: user.avatar,
       department: user.department,
       year_of_study: user.year_of_study,
@@ -325,7 +352,7 @@ export class AuthService {
       userId: user.id,
       ipAddress: reqMeta.ipAddress,
       userAgent: reqMeta.userAgent,
-      metadata: { method: 'PASSWORD' }
+      metadata: { method: 'PASSWORD', activeRole: user.role, roles: assignedRoles }
     });
 
     return {
@@ -334,6 +361,37 @@ export class AuthService {
       user: userPayload,
       session
     };
+  }
+
+  /**
+   * Authenticate user specifically for a target workspace entry point.
+   * Throws ROLE_NOT_ASSIGNED if the account does not hold the requested role.
+   */
+  static async loginWithRole(
+    dto: LoginDto,
+    targetRole: UserRole,
+    reqMeta: { ipAddress?: string; userAgent?: string } = {}
+  ): Promise<AuthResponse> {
+    const authResult = await this.login(dto, reqMeta);
+    const assignedRoles = authResult.user.roles || [authResult.user.role];
+
+    if (!assignedRoles.includes(targetRole)) {
+      this.logAuthEvent('ROLE_DENIED', authResult.user.email, {
+        userId: authResult.user.id,
+        ipAddress: reqMeta.ipAddress,
+        userAgent: reqMeta.userAgent,
+        metadata: { requestedRole: targetRole, assignedRoles }
+      });
+      const err: any = new Error(`ROLE_NOT_ASSIGNED: Account '${authResult.user.email}' is not assigned to the '${targetRole}' workspace. Available roles: [${assignedRoles.join(', ')}]`);
+      err.code = 'ROLE_NOT_ASSIGNED';
+      throw err;
+    }
+
+    // Switch active token context to the verified target role
+    authResult.user.role = targetRole;
+    authResult.token = this.signToken(authResult.user);
+
+    return authResult;
   }
 
   /**
@@ -434,11 +492,35 @@ export class AuthService {
     // Update last_login
     db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
 
+    // Fetch all active assigned roles for this user
+    let assignedRoles: UserRole[] = [user.role];
+    try {
+      const activeRows = db.prepare(`
+        SELECT role_key FROM role_assignments
+        WHERE user_id = ? AND status = 'active'
+      `).all(user.id) as Array<{ role_key: string }>;
+
+      if (activeRows.length > 0) {
+        assignedRoles = Array.from(new Set([
+          user.role as UserRole,
+          ...activeRows.map(r => r.role_key as UserRole)
+        ]));
+      }
+    } catch {
+      // Fallback
+    }
+
+    const targetRole = (role as string) === 'faculty' ? 'ta_faculty' : role;
+    if (!assignedRoles.includes(targetRole as UserRole)) {
+      assignedRoles.push(targetRole as UserRole);
+    }
+
     const userPayload: AuthUser = {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: targetRole as UserRole,
+      roles: assignedRoles,
       avatar: user.avatar,
       department: user.department,
       year_of_study: user.year_of_study,

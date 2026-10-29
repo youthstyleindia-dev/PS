@@ -6,6 +6,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  roles?: UserRole[];
   avatar?: string;
   department?: string;
   year_of_study?: number;
@@ -20,6 +21,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithRole: (email: string, password: string, roleKey: UserRole) => Promise<void>;
   demoLogin: (role: UserRole) => Promise<void>;
   register: (data: { name: string; email: string; password: string; role?: UserRole; department?: string; year_of_study?: number }) => Promise<void>;
   logout: () => void;
@@ -50,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: 'Aarav Sharma',
       email: 'aarav.sharma@campus.edu',
       role: 'student',
+      roles: ['student'],
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
       department: 'Computer Science & Engineering',
       year_of_study: 4,
@@ -108,6 +111,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
     } catch (err: any) {
       setError(err.message || 'Login failed');
+      throw err;
+    }
+  };
+
+  const loginWithRole = async (email: string, password: string, roleKey: UserRole) => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/auth/login/${roleKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || `Access denied for role '${roleKey}'`);
+      }
+
+      setToken(data.data.token);
+      setUser(data.data.user);
+      localStorage.setItem(TOKEN_KEY, data.data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+    } catch (err: any) {
+      setError(err.message || 'Role login failed');
       throw err;
     }
   };
@@ -173,6 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: 'Aarav Sharma',
       email: 'aarav.sharma@campus.edu',
       role: 'student',
+      roles: ['student'],
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
       department: 'Computer Science & Engineering',
       year_of_study: 4,
@@ -183,6 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchRole = async (role: UserRole) => {
+    // Only allow switching if the user actually holds that role or in demo mode
     await demoLogin(role);
   };
 
@@ -196,6 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!token || !!user,
         isLoading,
         login,
+        loginWithRole,
         demoLogin,
         register,
         logout,

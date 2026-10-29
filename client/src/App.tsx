@@ -17,11 +17,13 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { AboutPrinciplesPage } from './pages/AboutPrinciplesPage';
 import { ImpactPage } from './pages/ImpactPage';
+import { RoleGate } from './auth/RoleGate';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const standaloneRoutes = ['/', '/login', '/onboarding', '/how-it-works', '/about', '/impact'];
-  const isStandalone = standaloneRoutes.includes(location.pathname);
+  const isStandalone = location.pathname === '/' ||
+    location.pathname.startsWith('/login') ||
+    ['/onboarding', '/how-it-works', '/about', '/impact'].includes(location.pathname);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if (isStandalone) {
@@ -69,17 +71,18 @@ export function App() {
         <AppLayout>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/app" element={<Dashboard />} />
-            <Route path="/academic" element={<AcademicHub />} />
-            <Route path="/hub" element={<AcademicHub />} />
-            <Route path="/rides" element={<RidesPage />} />
-            <Route path="/sustainability" element={<SustainabilityPage />} />
-            <Route path="/wellbeing" element={<WellbeingPage />} />
-            <Route path="/exam-monitor" element={<ExamMonitorPage />} />
-            <Route path="/exams" element={<ExamMonitorPage />} />
-            <Route path="/architecture" element={<ArchitecturePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/app" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><Dashboard /></RoleGate>} />
+            <Route path="/academic" element={<RoleGate allowedRoles={['student', 'ta_faculty', 'admin']}><AcademicHub /></RoleGate>} />
+            <Route path="/hub" element={<RoleGate allowedRoles={['student', 'ta_faculty', 'admin']}><AcademicHub /></RoleGate>} />
+            <Route path="/rides" element={<RoleGate allowedRoles={['student', 'driver', 'ta_faculty', 'warden', 'admin']}><RidesPage /></RoleGate>} />
+            <Route path="/sustainability" element={<RoleGate allowedRoles={['student', 'driver', 'ta_faculty', 'warden', 'admin']}><SustainabilityPage /></RoleGate>} />
+            <Route path="/wellbeing" element={<RoleGate allowedRoles={['student']}><WellbeingPage /></RoleGate>} />
+            <Route path="/exam-monitor" element={<RoleGate allowedRoles={['proctor', 'admin']}><ExamMonitorPage /></RoleGate>} />
+            <Route path="/exams" element={<RoleGate allowedRoles={['proctor', 'admin']}><ExamMonitorPage /></RoleGate>} />
+            <Route path="/architecture" element={<RoleGate allowedRoles={['student', 'ta_faculty', 'proctor', 'warden', 'admin']}><ArchitecturePage /></RoleGate>} />
+            <Route path="/settings" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><SettingsPage /></RoleGate>} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/login/:roleKey" element={<LoginPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/about" element={<AboutPrinciplesPage />} />

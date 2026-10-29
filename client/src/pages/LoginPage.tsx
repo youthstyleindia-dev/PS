@@ -1,26 +1,101 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, demoLogin, register, error, clearError } = useAuth();
+  const { roleKey } = useParams<{ roleKey?: string }>();
+  const { login, loginWithRole, demoLogin, register, error, clearError } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'sso' | 'register'>('sso');
   const [email, setEmail] = useState('aarav.sharma@campus.edu');
   const [password, setPassword] = useState('CampusPass123!');
-  const [institution, setInstitution] = useState('poly');
   const [isEphemeral, setIsEphemeral] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Register form state
+  // Register form state (always provisioned as student)
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('student');
   const [regDept, setRegDept] = useState('Computer Science & Engineering');
+
+  // Normalize target role from URL if present
+  const normalizedTargetRole: UserRole | null = roleKey
+    ? (roleKey === 'faculty' || roleKey === 'ta' ? 'ta_faculty' : roleKey as UserRole)
+    : null;
+
+  // Set default credentials based on target role portal
+  useEffect(() => {
+    if (normalizedTargetRole === 'driver') {
+      setEmail('vikram.rao@campus.edu');
+      setPassword('CampusPass123!');
+    } else if (normalizedTargetRole === 'proctor') {
+      setEmail('m.sundaram@campus.edu');
+      setPassword('CampusPass123!');
+    } else if (normalizedTargetRole === 'ta_faculty') {
+      setEmail('dr.patel@campus.edu');
+      setPassword('CampusPass123!');
+    } else if (normalizedTargetRole === 'warden') {
+      setEmail('warden@campus.edu');
+      setPassword('CampusPass123!');
+    } else if (normalizedTargetRole === 'admin') {
+      setEmail('admin@campus.edu');
+      setPassword('CampusPass123!');
+    } else if (normalizedTargetRole === 'student') {
+      setEmail('aarav.sharma@campus.edu');
+      setPassword('CampusPass123!');
+    }
+  }, [normalizedTargetRole]);
+
+  const portalMetadata: Record<UserRole, { title: string; subtitle: string; badge: string; color: string }> = {
+    student: {
+      title: 'Sign In: Scholar & Academic Hub',
+      subtitle: 'Placement Readiness, Skill Radars, Mentorship Commons & Carpooling',
+      badge: 'STUDENT PORTAL',
+      color: 'bg-secondary text-on-secondary'
+    },
+    driver: {
+      title: 'Transit Partner Access',
+      subtitle: 'Campus Mobility Fleet, Route Corridor Matching & Detour Controls',
+      badge: 'DRIVER PORTAL',
+      color: 'bg-emerald-600 text-white'
+    },
+    proctor: {
+      title: 'Examination Review Workspace',
+      subtitle: 'Human-in-the-Loop Tribunal, Observation Packets & Audit Logs',
+      badge: 'PROCTOR PORTAL',
+      color: 'bg-amber-600 text-white'
+    },
+    ta_faculty: {
+      title: 'Academic Faculty & Mentor Workspace',
+      subtitle: 'Mentorship Applications, Graduate Advising & Resource Publishing',
+      badge: 'FACULTY PORTAL',
+      color: 'bg-blue-600 text-white'
+    },
+    warden: {
+      title: 'Campus Operations & Residential Staff',
+      subtitle: 'Residential Safety, Transit Mesh Observability & Facilities',
+      badge: 'WARDEN PORTAL',
+      color: 'bg-teal-600 text-white'
+    },
+    admin: {
+      title: 'System Administration & Security Enclave',
+      subtitle: 'User Directory, Role Governance, Slurm Telemetry & Audit Trail',
+      badge: 'ADMIN PORTAL',
+      color: 'bg-purple-600 text-white'
+    }
+  };
+
+  const currentMeta = normalizedTargetRole && portalMetadata[normalizedTargetRole]
+    ? portalMetadata[normalizedTargetRole]
+    : {
+        title: 'UniVerse Unified Campus Portal',
+        subtitle: 'Authenticating Enclave Nodes across 5 Integrated Collegiate Domains',
+        badge: 'ALL-ACCESS PORTAL',
+        color: 'bg-primary text-on-primary'
+      };
 
   const handleAuthSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -28,19 +103,23 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       if (activeTab === 'sso') {
-        await login(email, password);
+        if (normalizedTargetRole) {
+          await loginWithRole(email, password, normalizedTargetRole);
+        } else {
+          await login(email, password);
+        }
       } else {
         await register({
           name: regName,
           email: regEmail,
           password: regPassword,
-          role: regRole,
+          role: 'student',
           department: regDept,
           year_of_study: 1
         });
       }
       navigate('/app');
-    } catch (err) {
+    } catch {
       // Error handled by AuthContext
     } finally {
       setLoading(false);
@@ -68,107 +147,106 @@ export const LoginPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/')}
-              className="font-headline-sm text-headline-sm tracking-tight text-primary font-bold uppercase hover:text-secondary transition-colors"
+              className="w-8 h-8 bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-sm tracking-wider hover:bg-secondary transition-colors"
             >
-              UniVerse
+              U
             </button>
-            <span className="font-label-sm text-label-sm text-outline uppercase px-2 py-0.5 bg-surface-container-high">
-              Node // 0x4F92
+            <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-primary">
+              UniVerse
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 font-label-sm text-label-sm uppercase bg-surface-container text-on-surface-variant">
-              <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-              Verified Academic Node
+            <span className="font-label-sm text-label-sm px-2 py-0.5 bg-surface-container-high text-on-surface font-mono font-bold hidden sm:inline-block">
+              {currentMeta.badge}
             </span>
           </div>
-          <button
-            onClick={() => navigate('/')}
-            className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5"
-          >
-            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Return to Campus Public Portal
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/how-it-works')}
+              className="px-3 py-1.5 text-xs font-mono font-medium text-on-surface-variant hover:text-primary transition-colors hidden md:block"
+            >
+              HOW_IT_WORKS
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-3 py-1.5 text-xs font-mono font-medium text-on-surface-variant hover:text-primary transition-colors"
+            >
+              BACK_TO_CAMPUS
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="w-full flex-1 flex flex-col bg-surface">
-        <div className="w-full max-w-7xl mx-auto px-4 md:px-12 py-8 md:py-12 flex flex-col gap-8">
-          {/* Node Security Banner */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-outline-variant/40">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-label-sm text-label-sm uppercase px-2 py-1 bg-surface-container-highest text-on-surface font-semibold tracking-wider">
-                ACADEMIC NODE V2.4
+      {/* Main Container */}
+      <main className="flex-1 flex items-center justify-center p-4 md:p-8 lg:p-12">
+        <div className="w-full max-w-6xl mx-auto flex flex-col gap-8">
+          {/* Distinct Role Entry Point Navigation Strip */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs uppercase text-on-surface-variant font-bold tracking-wider">
+                Select Dedicated Workspace Entry Point:
               </span>
-              <span className="font-label-sm text-label-sm uppercase px-2 py-1 bg-surface-container-high text-on-surface-variant tracking-wider">
-                [DEMO SANDBOX ACTIVE]
-              </span>
-              <span className="font-label-sm text-label-sm uppercase text-secondary font-semibold flex items-center gap-1">
-                <span className="inline-block w-2 h-2 rounded-full bg-secondary"></span>
-                TLS 1.3 ENCLAVE ATTESTED
+              <span className="font-mono text-[11px] text-secondary font-semibold">
+                ROLE-BASED AUTHORIZATION ENFORCED
               </span>
             </div>
-            <div className="font-label-sm text-label-sm text-outline uppercase flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px]">verified_user</span>
-              SHIBBOLETH FEDERATION: INCOMMON // EDUGAIN
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('/login')}
+                className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border transition-all ${
+                  !normalizedTargetRole
+                    ? 'bg-primary text-on-primary border-primary shadow-sm'
+                    : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
+                }`}
+              >
+                All-Campus SSO
+              </button>
+              {(['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin'] as UserRole[]).map((r) => {
+                const meta = portalMetadata[r];
+                const isSelected = normalizedTargetRole === r;
+                return (
+                  <button
+                    key={r}
+                    onClick={() => navigate(`/login/${r}`)}
+                    className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border transition-all flex items-center gap-1.5 ${
+                      isSelected
+                        ? `${meta.color} border-current shadow-sm`
+                        : 'bg-surface-container hover:bg-surface-container-high text-on-surface border-outline-variant'
+                    }`}
+                  >
+                    <span>{meta.badge.replace(' PORTAL', '')}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left Column: Mission & Demo Personas */}
+            {/* Left Column: Context & Evaluator Persona Switcher */}
             <div className="lg:col-span-6 flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <span className="font-label-md text-label-md uppercase tracking-wider text-secondary font-semibold">
-                  IDENTITY DECOUPLING // PROTOCOL V2.4
+              <div className="space-y-3">
+                <span className={`inline-flex items-center px-2 py-0.5 font-label-sm text-label-sm font-mono font-bold uppercase ${currentMeta.color}`}>
+                  {currentMeta.badge}
                 </span>
-                <h1 className="font-headline-xl text-headline-xl text-primary tracking-tight font-extrabold leading-[1.05]">
-                  Authenticate without surveillance.
+                <h1 className="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">
+                  {currentMeta.title}
                 </h1>
-                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl pt-2">
-                  UniVerse utilizes client-side cryptographic keypairs and federated institutional SAML/Shibboleth. No persistent session tracking, behavioral profiling, or advertising telemetry.
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  {currentMeta.subtitle}. Enforces strict server-side boundary isolation where each account accesses only its authorized workspace.
                 </p>
               </div>
 
-              {/* Security Principles */}
-              <div className="flex flex-col gap-2 bg-surface-container-low p-4 border border-outline-variant">
-                <div className="flex items-start gap-3 p-3 bg-surface-container-lowest">
-                  <span className="font-label-md text-label-md font-bold text-secondary px-2 py-0.5 bg-secondary-fixed">
-                    01
+              {/* Pre-provisioned Demo Evaluator Quick Access */}
+              <div className="bg-surface-container-low p-4 sm:p-5 border border-outline-variant flex flex-col gap-3">
+                <div className="flex items-center justify-between pb-2 border-b border-outline-variant">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-secondary text-[20px]">verified_user</span>
+                    <span className="font-headline-sm text-[14px] font-bold text-primary uppercase font-mono">
+                      Pre-Provisioned Demo Personas
+                    </span>
+                  </div>
+                  <span className="font-label-sm text-[11px] font-mono text-secondary font-bold">
+                    [EVALUATOR TEST FIXTURES]
                   </span>
-                  <div className="flex flex-col">
-                    <span className="font-label-md text-label-md font-semibold text-primary uppercase tracking-wide">
-                      ZERO COMMERCIAL HARVESTING
-                    </span>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                      University identity is attested via zero-knowledge proofs. Metadata never leaves local encrypted storage partitions.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-3 bg-surface-container-lowest">
-                  <span className="font-label-md text-label-md font-bold text-secondary px-2 py-0.5 bg-secondary-fixed">
-                    02
-                  </span>
-                  <div className="flex flex-col">
-                    <span className="font-label-md text-label-md font-semibold text-primary uppercase tracking-wide">
-                      ROLE-BASED DEMO SANDBOX
-                    </span>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                      Explore collegiate perspectives safely. Switch between commuter scholar, peer driver, faculty ombuds, or administrator with zero identity contamination.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Instant Demo Personas */}
-              <div className="bg-surface-container p-4 border border-outline-variant flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[18px] text-secondary">group_work</span>
-                    <span className="font-label-md text-label-md uppercase font-bold text-primary tracking-wide">
-                      Instant Demo Personas
-                    </span>
-                  </div>
-                  <span className="font-label-sm text-label-sm text-outline uppercase">[SANDBOX PRESETS]</span>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -180,22 +258,19 @@ export const LoginPage: React.FC = () => {
                   >
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[16px] font-bold text-primary group-hover:text-secondary">
+                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
                           Aarav Sharma
                         </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-secondary-fixed text-on-secondary-fixed font-bold uppercase">
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-secondary text-on-secondary font-bold uppercase">
                           STUDENT
                         </span>
                       </div>
-                      <span className="font-body-sm text-body-sm text-on-surface-variant">
-                        Senior Computer Science • Peer Mentee & Commuter
-                      </span>
-                      <span className="font-label-sm text-label-sm text-secondary uppercase font-semibold mt-0.5">
-                        Status: Active carpool slot • 4 Focus sprints completed
+                      <span className="font-body-sm text-xs text-on-surface-variant">
+                        4th-Year Computer Science • Placement Readiness 85%
                       </span>
                     </div>
-                    <span className="font-label-sm text-label-sm bg-primary text-on-primary px-3 py-1.5 uppercase font-bold self-start sm:self-center shrink-0 group-hover:bg-secondary transition-colors">
-                      Enter Persona
+                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
+                      Enter
                     </span>
                   </button>
 
@@ -207,22 +282,19 @@ export const LoginPage: React.FC = () => {
                   >
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[16px] font-bold text-primary group-hover:text-secondary">
+                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
                           Vikram Rao
                         </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-surface-container-highest text-primary font-bold uppercase">
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-emerald-600 text-white font-bold uppercase">
                           DRIVER
                         </span>
                       </div>
-                      <span className="font-body-sm text-body-sm text-on-surface-variant">
-                        Mechanical Engineering • EV Carpool Commuter
-                      </span>
-                      <span className="font-label-sm text-label-sm text-secondary uppercase font-semibold mt-0.5">
-                        Status: Dijkstra corridor dynamic router linked (0.34kg CO2 saved)
+                      <span className="font-body-sm text-xs text-on-surface-variant">
+                        Tata Nexon EV • Daily North Gate Itinerary Operator
                       </span>
                     </div>
-                    <span className="font-label-sm text-label-sm bg-primary text-on-primary px-3 py-1.5 uppercase font-bold self-start sm:self-center shrink-0 group-hover:bg-secondary transition-colors">
-                      Enter Persona
+                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
+                      Enter
                     </span>
                   </button>
 
@@ -234,26 +306,71 @@ export const LoginPage: React.FC = () => {
                   >
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[16px] font-bold text-primary group-hover:text-secondary">
+                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
                           Dr. Meenakshi Sundaram
                         </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-amber-100 text-amber-900 font-bold uppercase">
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-amber-600 text-white font-bold uppercase">
                           PROCTOR
                         </span>
                       </div>
-                      <span className="font-body-sm text-body-sm text-on-surface-variant">
-                        Examination Review Chair • Non-Punitive Auditor
-                      </span>
-                      <span className="font-label-sm text-label-sm text-secondary uppercase font-semibold mt-0.5">
-                        Status: 3 Blind appeal packages awaiting human review
+                      <span className="font-body-sm text-xs text-on-surface-variant">
+                        Examination Review Chair • Double-Blind Auditor
                       </span>
                     </div>
-                    <span className="font-label-sm text-label-sm bg-primary text-on-primary px-3 py-1.5 uppercase font-bold self-start sm:self-center shrink-0 group-hover:bg-secondary transition-colors">
-                      Enter Persona
+                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
+                      Enter
                     </span>
                   </button>
 
-                  {/* Persona 4: Admin */}
+                  {/* Persona 4: Faculty / TA */}
+                  <button
+                    disabled={loading}
+                    onClick={() => handleDemoPersona('ta_faculty')}
+                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
+                          Dr. Priya Patel
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-blue-600 text-white font-bold uppercase">
+                          FACULTY / TA
+                        </span>
+                      </div>
+                      <span className="font-body-sm text-xs text-on-surface-variant">
+                        Graduate Mentor &amp; Resource Author
+                      </span>
+                    </div>
+                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
+                      Enter
+                    </span>
+                  </button>
+
+                  {/* Persona 5: Warden */}
+                  <button
+                    disabled={loading}
+                    onClick={() => handleDemoPersona('warden')}
+                    className="w-full text-left p-3 bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-outline-variant shadow-sm group"
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
+                          Campus Residential Warden
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-teal-600 text-white font-bold uppercase">
+                          WARDEN
+                        </span>
+                      </div>
+                      <span className="font-body-sm text-xs text-on-surface-variant">
+                        Residential Operations &amp; Transit Safety
+                      </span>
+                    </div>
+                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
+                      Enter
+                    </span>
+                  </button>
+
+                  {/* Persona 6: Admin */}
                   <button
                     disabled={loading}
                     onClick={() => handleDemoPersona('admin')}
@@ -261,50 +378,21 @@ export const LoginPage: React.FC = () => {
                   >
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-headline-sm text-[16px] font-bold text-primary group-hover:text-secondary">
+                        <span className="font-headline-sm text-[15px] font-bold text-primary group-hover:text-secondary">
                           Campus IT Operations
                         </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-purple-100 text-purple-900 font-bold uppercase">
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-purple-600 text-white font-bold uppercase">
                           ADMIN
                         </span>
                       </div>
-                      <span className="font-body-sm text-body-sm text-on-surface-variant">
-                        UniVerse Central Operations • Sustainable HPC Cluster Admin
-                      </span>
-                      <span className="font-label-sm text-label-sm text-secondary uppercase font-semibold mt-0.5">
-                        Status: Facility PUE 1.25 • 26 SQLite Relational Tables Active
+                      <span className="font-body-sm text-xs text-on-surface-variant">
+                        System Operations • 28 Relational SQLite Tables
                       </span>
                     </div>
-                    <span className="font-label-sm text-label-sm bg-primary text-on-primary px-3 py-1.5 uppercase font-bold self-start sm:self-center shrink-0 group-hover:bg-secondary transition-colors">
-                      Enter Persona
+                    <span className="font-label-sm text-xs bg-primary text-on-primary px-3 py-1 uppercase font-bold self-start sm:self-center shrink-0">
+                      Enter
                     </span>
                   </button>
-                </div>
-              </div>
-
-              {/* Consensus Metrics */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-surface-container-low p-4 border border-outline-variant flex flex-col gap-1">
-                  <span className="font-label-sm text-label-sm text-outline uppercase font-semibold">
-                    Active Node Consensus
-                  </span>
-                  <span className="font-data-metric text-data-metric font-bold text-primary">
-                    99.98%
-                  </span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">
-                    42 Campus Validator Nodes
-                  </span>
-                </div>
-                <div className="bg-surface-container-low p-4 border border-outline-variant flex flex-col gap-1">
-                  <span className="font-label-sm text-label-sm text-outline uppercase font-semibold">
-                    Decoupled Identities
-                  </span>
-                  <span className="font-data-metric text-data-metric font-bold text-secondary">
-                    14,290
-                  </span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">
-                    Zero PII Leak Disclosures
-                  </span>
                 </div>
               </div>
             </div>
@@ -312,12 +400,12 @@ export const LoginPage: React.FC = () => {
             {/* Right Column: Authentication Terminal */}
             <div className="lg:col-span-6 flex flex-col">
               <div className="bg-surface-container-lowest border border-outline-variant shadow-lg p-6 sm:p-8 flex flex-col gap-6">
-                <div className="flex items-center justify-between bg-surface-container-low p-2 border border-outline-variant">
-                  <span className="font-label-sm text-label-sm font-bold uppercase text-primary tracking-wider">
-                    AUTH_ID: 0x98FF-SESSION-EPHEMERAL
+                <div className="flex items-center justify-between bg-surface-container-low p-2 border border-outline-variant font-mono text-xs">
+                  <span className="font-bold uppercase text-primary tracking-wider">
+                    TARGET: {normalizedTargetRole ? normalizedTargetRole.toUpperCase() : 'GENERAL_SSO'}
                   </span>
-                  <span className="font-label-sm text-label-sm uppercase text-secondary font-semibold">
-                    PORT: 3001 (EXPRESS/WAL)
+                  <span className="text-secondary font-semibold">
+                    PORT: 3001
                   </span>
                 </div>
 
@@ -331,7 +419,7 @@ export const LoginPage: React.FC = () => {
                         : 'text-on-surface-variant hover:text-primary'
                     }`}
                   >
-                    Campus SSO / Password
+                    Campus Sign-In
                   </button>
                   <button
                     onClick={() => setActiveTab('register')}
@@ -341,7 +429,7 @@ export const LoginPage: React.FC = () => {
                         : 'text-on-surface-variant hover:text-primary'
                     }`}
                   >
-                    Provision New Node Account
+                    Public Student Onboarding
                   </button>
                 </div>
 
@@ -357,20 +445,13 @@ export const LoginPage: React.FC = () => {
                         Dismiss
                       </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDemoPersona('student')}
-                      className="self-start px-3 py-1 bg-primary text-on-primary text-[11px] font-bold uppercase hover:bg-secondary transition-colors"
-                    >
-                      Bypass &amp; Instant Enter as Student
-                    </button>
                   </div>
                 )}
 
                 {/* Tab 1: Login Form */}
                 {activeTab === 'sso' ? (
                   <form onSubmit={handleAuthSubmit} className="flex flex-col gap-5">
-                    {/* Quick 1-Click Credential Presets */}
+                    {/* Quick Preset Credential Autofill */}
                     <div className="flex flex-col gap-1.5 p-2.5 bg-surface-container border border-outline-variant">
                       <span className="font-label-sm text-[11px] font-bold uppercase text-primary tracking-wider">
                         Quick Preset Credential Autofill:
@@ -379,64 +460,44 @@ export const LoginPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => { setEmail('aarav.sharma@campus.edu'); setPassword('CampusPass123!'); }}
-                          className="px-2 py-1 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[11px] font-mono font-bold text-primary flex items-center gap-1"
+                          className="px-2 py-0.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[10px] font-mono text-on-surface font-semibold"
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                          Student (Aarav / Alex)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setEmail('dr.patel@campus.edu'); setPassword('faculty123'); }}
-                          className="px-2 py-1 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[11px] font-mono font-bold text-primary flex items-center gap-1"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                          Faculty / Proctor (Dr. Patel)
+                          Student (Aarav)
                         </button>
                         <button
                           type="button"
                           onClick={() => { setEmail('vikram.rao@campus.edu'); setPassword('CampusPass123!'); }}
-                          className="px-2 py-1 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[11px] font-mono font-bold text-primary flex items-center gap-1"
+                          className="px-2 py-0.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[10px] font-mono text-on-surface font-semibold"
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           Driver (Vikram)
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setEmail('admin@campus.edu'); setPassword('admin123'); }}
-                          className="px-2 py-1 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[11px] font-mono font-bold text-primary flex items-center gap-1"
+                          onClick={() => { setEmail('m.sundaram@campus.edu'); setPassword('CampusPass123!'); }}
+                          className="px-2 py-0.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[10px] font-mono text-on-surface font-semibold"
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                          Proctor (Dr. Sundaram)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setEmail('dr.patel@campus.edu'); setPassword('CampusPass123!'); }}
+                          className="px-2 py-0.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[10px] font-mono text-on-surface font-semibold"
+                        >
+                          Faculty (Dr. Patel)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setEmail('admin@campus.edu'); setPassword('CampusPass123!'); }}
+                          className="px-2 py-0.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant text-[10px] font-mono text-on-surface font-semibold"
+                        >
                           Admin (IT Ops)
                         </button>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                        1. Select Institutional Node
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={institution}
-                          onChange={(e) => setInstitution(e.target.value)}
-                          className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2.5 border border-outline-variant appearance-none focus:outline-none focus:border-secondary"
-                        >
-                          <option value="poly">Polytechnic Institute (Node #09 - Active InCommon)</option>
-                          <option value="state">State Metropolitan University (Node #14)</option>
-                          <option value="urban">Urban Research College (Node #03 - Sandbox Fed)</option>
-                          <option value="federated">EduGAIN Global Academic Gateway</option>
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
-                          <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                        </div>
-                      </div>
-                      <span className="font-label-sm text-label-sm text-outline">
-                        Shibboleth v3.4 SP with Zero-Knowledge Credential Shrouding
-                      </span>
-                    </div>
 
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                        2. Academic NetID or Federated Identifier
+                        Collegiate Email
                       </label>
                       <input
                         type="email"
@@ -444,27 +505,21 @@ export const LoginPage: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="e.g. aarav.sharma@campus.edu"
-                        className="w-full bg-surface-container-low text-primary font-label-md text-label-md px-3 py-2.5 border border-outline-variant focus:outline-none focus:border-secondary"
+                        className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2.5 border border-outline-variant focus:outline-none focus:border-secondary"
                       />
-                      <span className="font-label-sm text-label-sm text-outline">
-                        Demo Accounts: aarav.sharma@campus.edu, vikram.rao@campus.edu, m.sundaram@campus.edu, admin@campus.edu
-                      </span>
                     </div>
 
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
                         <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                          3. Institutional Passphrase / Token
+                          Password
                         </label>
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="font-label-sm text-label-sm uppercase text-secondary font-bold hover:underline flex items-center gap-1"
+                          className="font-label-sm text-xs text-on-surface-variant hover:text-primary font-mono"
                         >
-                          <span className="material-symbols-outlined text-[14px]">
-                            {showPassword ? 'visibility_off' : 'visibility'}
-                          </span>
-                          {showPassword ? 'Hide' : 'Reveal'}
+                          {showPassword ? 'HIDE' : 'SHOW'}
                         </button>
                       </div>
                       <input
@@ -472,28 +527,20 @@ export const LoginPage: React.FC = () => {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••••••••••"
-                        className="w-full bg-surface-container-low text-primary font-label-md text-label-md px-3 py-2.5 border border-outline-variant focus:outline-none focus:border-secondary"
+                        className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2.5 border border-outline-variant focus:outline-none focus:border-secondary"
                       />
-                      <span className="font-label-sm text-label-sm text-outline">
-                        Default Demo Password: <code className="font-bold text-primary">CampusPass123!</code>
-                      </span>
                     </div>
 
-                    <div className="p-3 bg-surface-container-low border border-outline-variant flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        id="ephemeral-check"
-                        checked={isEphemeral}
-                        onChange={(e) => setIsEphemeral(e.target.checked)}
-                        className="mt-1 accent-primary w-4 h-4 cursor-pointer"
-                      />
-                      <label htmlFor="ephemeral-check" className="flex flex-col cursor-pointer">
-                        <span className="font-label-md text-label-md font-bold text-primary uppercase">
-                          Keep Session Strictly Ephemeral
-                        </span>
-                        <span className="font-body-sm text-body-sm text-on-surface-variant">
-                          Recommended on public lab terminals & transit kiosks. Zero local cache stored beyond this runtime.
+                    <div className="flex items-center justify-between py-1">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isEphemeral}
+                          onChange={(e) => setIsEphemeral(e.target.checked)}
+                          className="w-4 h-4 border border-outline text-secondary focus:ring-0"
+                        />
+                        <span className="font-label-sm text-xs text-on-surface-variant">
+                          Remember session on this device
                         </span>
                       </label>
                     </div>
@@ -501,86 +548,82 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-primary text-on-primary py-3.5 px-4 font-label-md text-label-md font-bold uppercase tracking-wider hover:bg-on-surface transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                      className="w-full py-3 bg-primary text-on-primary font-label-md text-label-md font-bold uppercase tracking-wider hover:bg-secondary transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {loading ? (
                         <>
-                          <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span>
-                          <span>Attesting Identity Enclave...</span>
+                          <div className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></div>
+                          <span>Authenticating...</span>
                         </>
                       ) : (
                         <>
-                          <span>Authenticate with Campus Node</span>
-                          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                          <span className="material-symbols-outlined text-[18px]">lock_open</span>
+                          <span>
+                            {normalizedTargetRole
+                              ? `Authorize & Enter ${normalizedTargetRole.toUpperCase()} Workspace`
+                              : 'Authenticate Session'}
+                          </span>
                         </>
                       )}
                     </button>
                   </form>
                 ) : (
-                  /* Tab 2: Provision New Account Form */
+                  /* Tab 2: Public Registration Form */
                   <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
+                    <div className="p-3 bg-surface-container border border-outline-variant text-xs font-mono space-y-1">
+                      <div className="text-secondary font-bold">PUBLIC ONBOARDING POLICY</div>
+                      <div className="text-on-surface-variant">
+                        Public registrations provision verified <strong>Student Scholar</strong> profiles.
+                      </div>
+                      <div className="text-outline">
+                        Privileged Transit Driver, Invigilator, or Admin roles require administrative invitation.
+                      </div>
+                    </div>
+
                     <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                        Full Name & Scholar ID
+                      <label className="font-label-sm text-xs font-bold uppercase text-on-surface-variant tracking-wider">
+                        Full Name
                       </label>
                       <input
                         type="text"
                         required
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
-                        placeholder="e.g. Sarah Jenkins"
+                        placeholder="e.g. Diya Sharma"
                         className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2 border border-outline-variant focus:outline-none focus:border-secondary"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                        Academic Email
+                      <label className="font-label-sm text-xs font-bold uppercase text-on-surface-variant tracking-wider">
+                        Collegiate Email
                       </label>
                       <input
                         type="email"
                         required
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="e.g. s.jenkins@polytechnic.edu"
-                        className="w-full bg-surface-container-low text-primary font-label-md text-label-md px-3 py-2 border border-outline-variant focus:outline-none focus:border-secondary"
+                        placeholder="e.g. diya.sharma@campus.edu"
+                        className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2 border border-outline-variant focus:outline-none focus:border-secondary"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                          Collegiate Role
-                        </label>
-                        <select
-                          value={regRole}
-                          onChange={(e) => setRegRole(e.target.value as UserRole)}
-                          className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2 border border-outline-variant focus:outline-none"
-                        >
-                          <option value="student">Student Scholar</option>
-                          <option value="driver">Campus Transit Driver</option>
-                          <option value="proctor">Examination Proctor</option>
-                          <option value="admin">System Administrator</option>
-                        </select>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                          Department
-                        </label>
-                        <input
-                          type="text"
-                          value={regDept}
-                          onChange={(e) => setRegDept(e.target.value)}
-                          placeholder="e.g. Computer Science"
-                          className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2 border border-outline-variant focus:outline-none"
-                        />
-                      </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-xs font-bold uppercase text-on-surface-variant tracking-wider">
+                        Department
+                      </label>
+                      <input
+                        type="text"
+                        value={regDept}
+                        onChange={(e) => setRegDept(e.target.value)}
+                        placeholder="e.g. Computer Science & Engineering"
+                        className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2 border border-outline-variant focus:outline-none"
+                      />
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm font-bold uppercase text-on-surface-variant tracking-wider">
-                        Master Passphrase (min 8 characters)
+                      <label className="font-label-sm text-xs font-bold uppercase text-on-surface-variant tracking-wider">
+                        Password (Min. 8 Characters)
                       </label>
                       <input
                         type="password"
@@ -588,39 +631,27 @@ export const LoginPage: React.FC = () => {
                         minLength={8}
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
-                        placeholder="••••••••••••••••"
-                        className="w-full bg-surface-container-low text-primary font-label-md text-label-md px-3 py-2 border border-outline-variant focus:outline-none focus:border-secondary"
+                        placeholder="••••••••••••"
+                        className="w-full bg-surface-container-low text-primary font-body-md text-body-md px-3 py-2 border border-outline-variant focus:outline-none focus:border-secondary"
                       />
-                      <span className="font-label-sm text-label-sm text-outline">
-                        Will be hashed via Bcrypt (10 salt rounds) and recorded in SQLite.
-                      </span>
                     </div>
 
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-secondary text-on-secondary py-3 px-4 font-label-md text-label-md font-bold uppercase tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 mt-2"
+                      className="w-full py-3 bg-primary text-on-primary font-label-md text-label-md font-bold uppercase tracking-wider hover:bg-secondary transition-colors shadow-sm disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
                     >
                       {loading ? (
-                        <>
-                          <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span>
-                          <span>Creating Secure Ledger Account...</span>
-                        </>
+                        <span>Provisioning...</span>
                       ) : (
                         <>
-                          <span>Provision Scholar Ledger Account</span>
-                          <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                          <span className="material-symbols-outlined text-[18px]">person_add</span>
+                          <span>Provision Student Node</span>
                         </>
                       )}
                     </button>
                   </form>
                 )}
-
-                {/* Footer Notice */}
-                <div className="p-3 bg-surface-container-low border border-outline-variant text-[11px] font-mono text-outline leading-tight">
-                  <div className="font-bold text-primary mb-1">LOCAL-FIRST SOVEREIGNTY:</div>
-                  All cryptographic signatures and database operations run directly against local SQLite (WAL mode). Zero telemetry sent to commercial clouds.
-                </div>
               </div>
             </div>
           </div>
@@ -629,4 +660,5 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+
 export default LoginPage;

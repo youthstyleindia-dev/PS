@@ -15,6 +15,9 @@ export function seedDatabase(customDbPath?: string): void {
     // 1. CLEAR EXISTING DATA (Clean Slate)
     // --------------------------------------------------------------------------
     db.exec(`
+      DELETE FROM exam_session_assignments;
+      DELETE FROM role_invitations;
+      DELETE FROM role_assignments;
       DELETE FROM notifications;
       DELETE FROM activity_log;
       DELETE FROM exam_audit_log;
@@ -62,7 +65,36 @@ export function seedDatabase(customDbPath?: string): void {
     insertUser.run('usr_proctor_1', 'Dr. Meenakshi Sundaram', 'm.sundaram@campus.edu', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Meenakshi', 'proctor', 'Computer Science & Engineering', null, 'Professor & Exam Review Chair. Focus on academic integrity and non-punitive proctoring.');
     insertUser.run('usr_proctor_2', 'Prof. Rajesh Nair', 'rajesh.nair@campus.edu', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rajesh', 'proctor', 'Electronics & Comm. Engg', null, 'Associate Dean of Examinations and Chief Invigilator.');
 
+    insertUser.run('usr_faculty_1', 'Dr. Priya Patel', 'dr.patel@campus.edu', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya', 'ta_faculty', 'Computer Science & Engineering', null, 'Associate Professor and Graduate Academic Advisor.');
+    insertUser.run('usr_warden_1', 'Campus Residential Warden', 'warden@campus.edu', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Warden', 'warden', 'Residential & Campus Life', null, 'Head of Campus Life, Dormitories and Transit Safety.');
+
     insertUser.run('usr_admin_1', 'Campus IT Operations', 'admin@campus.edu', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin', 'admin', 'Campus Central IT', null, 'UniVerse Campus Operating System Administrator.');
+
+    // --------------------------------------------------------------------------
+    // 2B. ROLE ASSIGNMENTS (Multi-Role Server RBAC Registry)
+    // --------------------------------------------------------------------------
+    const insertRoleAssignment = db.prepare(`
+      INSERT INTO role_assignments (id, user_id, role_key, status, granted_by_user_id, reason)
+      VALUES (?, ?, ?, 'active', 'usr_admin_1', ?)
+    `);
+
+    insertRoleAssignment.run('ra_stu_1', 'usr_student_1', 'student', 'Matriculated undergraduate');
+    insertRoleAssignment.run('ra_stu_2', 'usr_student_2', 'student', 'Matriculated undergraduate');
+    insertRoleAssignment.run('ra_stu_3', 'usr_student_3', 'student', 'Matriculated undergraduate');
+    insertRoleAssignment.run('ra_stu_4', 'usr_student_4', 'student', 'Matriculated undergraduate');
+
+    insertRoleAssignment.run('ra_drv_1', 'usr_driver_1', 'driver', 'Authorized campus EV driver');
+    insertRoleAssignment.run('ra_drv_1_stu', 'usr_driver_1', 'student', 'Driver is also an engineering student');
+    insertRoleAssignment.run('ra_drv_2', 'usr_driver_2', 'driver', 'Transit fleet operator');
+
+    insertRoleAssignment.run('ra_prc_1', 'usr_proctor_1', 'proctor', 'Appointed exam ombudsman');
+    insertRoleAssignment.run('ra_prc_1_fac', 'usr_proctor_1', 'ta_faculty', 'Faculty senate member');
+    insertRoleAssignment.run('ra_prc_2', 'usr_proctor_2', 'proctor', 'Appointed chief invigilator');
+
+    insertRoleAssignment.run('ra_fac_1', 'usr_faculty_1', 'ta_faculty', 'Faculty professor appointment');
+    insertRoleAssignment.run('ra_war_1', 'usr_warden_1', 'warden', 'Residential campus operations appointment');
+
+    insertRoleAssignment.run('ra_adm_1', 'usr_admin_1', 'admin', 'Root enclave administrator');
 
     // --------------------------------------------------------------------------
     // 3. MODULE A: STUDENT PROFILES & PLACEMENT MILESTONES
@@ -521,6 +553,13 @@ export function seedDatabase(customDbPath?: string): void {
       'in_progress',
       JSON.stringify({ x: 100, y: 80, w: 440, h: 320 })
     );
+
+    const insertExamAssignment = db.prepare(`
+      INSERT INTO exam_session_assignments (id, session_id, proctor_id, status)
+      VALUES (?, ?, ?, 'active')
+    `);
+    insertExamAssignment.run('esa_1', 'exam_1', 'usr_proctor_1');
+    insertExamAssignment.run('esa_2', 'exam_1', 'usr_proctor_2');
 
     const insertObservation = db.prepare(`
       INSERT INTO observation_events (id, exam_session_id, timestamp, offset_seconds, event_type, confidence_score, frame_snapshot_url, provenance, metrics_payload, review_status, proctor_notes, reviewer_id, resolved_at)

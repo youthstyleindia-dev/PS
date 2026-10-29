@@ -1,4 +1,7 @@
-export type UserRole = 'student' | 'driver' | 'proctor' | 'admin';
+import { CanonicalRole, Permission, RoleAssignment } from '../authorization/role.types.js';
+
+export type UserRole = CanonicalRole;
+export type { CanonicalRole, Permission, RoleAssignment };
 
 export interface User {
   id: string;
@@ -6,6 +9,7 @@ export interface User {
   email: string;
   avatar?: string;
   role: UserRole;
+  roles?: UserRole[];
   department?: string;
   year_of_study?: number;
   bio?: string;
@@ -34,8 +38,9 @@ export interface ApiResponse<T> {
 
 export interface ApiErrorResponse {
   error: {
-    code: 'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_SERVER_ERROR';
+    code: 'UNAUTHORIZED' | 'FORBIDDEN' | 'ROLE_NOT_ASSIGNED' | 'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_SERVER_ERROR';
     message: string;
     details?: any;
+    requestId?: string;
   };
 }

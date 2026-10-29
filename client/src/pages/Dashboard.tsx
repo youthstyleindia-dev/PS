@@ -71,40 +71,67 @@ export const Dashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Action Ledger Controls */}
+          {/* Quick Action Ledger Controls (Strictly Role-Scoped) */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              onClick={() => navigate('/rides')}
-              className="px-4 py-2.5 bg-primary text-on-primary font-label-md text-label-md uppercase tracking-wider shadow-sm hover:translate-y-[-1px] transition-transform flex items-center gap-1.5 font-bold"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[16px]">directions_car</span>
-              <span>+ New Ride Request</span>
-            </button>
-            <button
-              onClick={() => navigate('/wellbeing')}
-              className="px-4 py-2.5 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-label-md text-label-md uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold border border-outline-variant"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[16px]">timer</span>
-              <span>Start 45m Focus</span>
-            </button>
-            <button
-              onClick={() => navigate('/sustainability')}
-              className="px-4 py-2.5 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-label-md text-label-md uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold border border-outline-variant"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[16px]">energy_savings_leaf</span>
-              <span>Sync Slurm</span>
-            </button>
-            <button
-              onClick={() => navigate('/academic')}
-              className="px-4 py-2.5 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-label-md text-label-md uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold border border-outline-variant"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[16px]">school</span>
-              <span>Skill Tree</span>
-            </button>
+            {user?.role === 'driver' ? (
+              <button
+                onClick={() => navigate('/rides')}
+                className="px-4 py-2.5 bg-primary text-on-primary font-label-md text-label-md uppercase tracking-wider shadow-sm hover:translate-y-[-1px] transition-transform flex items-center gap-1.5 font-bold"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">add_road</span>
+                <span>+ Publish Driver Route</span>
+              </button>
+            ) : user?.role === 'proctor' ? (
+              <button
+                onClick={() => navigate('/exams')}
+                className="px-4 py-2.5 bg-amber-600 text-white font-label-md text-label-md uppercase tracking-wider shadow-sm hover:translate-y-[-1px] transition-transform flex items-center gap-1.5 font-bold"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">gavel</span>
+                <span>Open Review Tribunal</span>
+              </button>
+            ) : user?.role === 'admin' ? (
+              <button
+                onClick={() => navigate('/settings')}
+                className="px-4 py-2.5 bg-purple-600 text-white font-label-md text-label-md uppercase tracking-wider shadow-sm hover:translate-y-[-1px] transition-transform flex items-center gap-1.5 font-bold"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
+                <span>User &amp; Role Registry</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/rides')}
+                className="px-4 py-2.5 bg-primary text-on-primary font-label-md text-label-md uppercase tracking-wider shadow-sm hover:translate-y-[-1px] transition-transform flex items-center gap-1.5 font-bold"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">directions_car</span>
+                <span>+ Find Carpool</span>
+              </button>
+            )}
+
+            {user?.role === 'student' && (
+              <button
+                onClick={() => navigate('/wellbeing')}
+                className="px-4 py-2.5 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-label-md text-label-md uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold border border-outline-variant"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">timer</span>
+                <span>Start 45m Focus</span>
+              </button>
+            )}
+
+            {(user?.role === 'student' || user?.role === 'ta_faculty' || user?.role === 'admin') && (
+              <button
+                onClick={() => navigate('/academic')}
+                className="px-4 py-2.5 bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-label-md text-label-md uppercase tracking-wider transition-colors flex items-center gap-1.5 font-bold border border-outline-variant"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">school</span>
+                <span>Academic Hub</span>
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -205,35 +232,95 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 4: Exam Review Tribunal */}
-        <div
-          onClick={() => navigate('/exams')}
-          className="bg-surface-container-lowest p-4 border border-outline-variant shadow-sm flex flex-col justify-between cursor-pointer hover:border-secondary transition-all"
-        >
-          <div>
-            <div className="flex items-center justify-between pb-1">
-              <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider font-mono">
-                REF: EXAM_TRIBUNAL
-              </span>
-              <span className="font-label-sm text-label-sm px-1.5 py-0.5 bg-error-container text-on-error-container font-semibold uppercase font-mono">
-                18H REMAINING
-              </span>
+        {/* Card 4: Role-Scoped Action Metric */}
+        {user?.role === 'proctor' || user?.role === 'admin' ? (
+          <div
+            onClick={() => navigate('/exams')}
+            className="bg-surface-container-lowest p-4 border border-outline-variant shadow-sm flex flex-col justify-between cursor-pointer hover:border-secondary transition-all"
+          >
+            <div>
+              <div className="flex items-center justify-between pb-1">
+                <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider font-mono">
+                  REF: EXAM_TRIBUNAL
+                </span>
+                <span className="font-label-sm text-label-sm px-1.5 py-0.5 bg-error-container text-on-error-container font-semibold uppercase font-mono">
+                  18H REMAINING
+                </span>
+              </div>
+              <div className="mt-1">
+                <span className="font-body-sm text-body-sm text-on-surface-variant block">Pending Proctor Reviews</span>
+                <h3 className="font-headline-sm text-headline-sm text-primary mt-0.5 font-bold">
+                  1 Observation Packet
+                </h3>
+              </div>
             </div>
-            <div className="mt-1">
-              <span className="font-body-sm text-body-sm text-on-surface-variant block">Pending Peer Reviews</span>
-              <h3 className="font-headline-sm text-headline-sm text-primary mt-0.5 font-bold">
-                1 Exam Observation Packet
-              </h3>
+            <div className="mt-4 pt-1 space-y-1 font-label-sm text-label-sm font-mono border-t border-outline-variant/40">
+              <div className="flex items-center justify-between text-on-surface">
+                <span>Packet: CS301_Midterm_Q4</span>
+                <span className="text-secondary font-medium">Double-Blinded</span>
+              </div>
+              <div className="text-outline">Human-in-the-loop review mandatory</div>
             </div>
           </div>
-          <div className="mt-4 pt-1 space-y-1 font-label-sm text-label-sm font-mono border-t border-outline-variant/40">
-            <div className="flex items-center justify-between text-on-surface">
-              <span>Packet: CS301_Midterm_Q4</span>
-              <span className="text-secondary font-medium">Double-Blinded</span>
+        ) : user?.role === 'driver' ? (
+          <div
+            onClick={() => navigate('/rides')}
+            className="bg-surface-container-lowest p-4 border border-outline-variant shadow-sm flex flex-col justify-between cursor-pointer hover:border-secondary transition-all"
+          >
+            <div>
+              <div className="flex items-center justify-between pb-1">
+                <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider font-mono">
+                  REF: DRIVER_FLEET
+                </span>
+                <span className="font-label-sm text-label-sm px-1.5 py-0.5 bg-secondary-fixed text-on-secondary-fixed font-semibold uppercase font-mono">
+                  ACTIVE COMMUTER
+                </span>
+              </div>
+              <div className="mt-1">
+                <span className="font-body-sm text-body-sm text-on-surface-variant block">Vehicle Capacity Status</span>
+                <h3 className="font-headline-sm text-headline-sm text-primary mt-0.5 font-bold">
+                  EV Sedan • 4 Seats
+                </h3>
+              </div>
             </div>
-            <div className="text-outline">Human-in-the-loop review mandatory</div>
+            <div className="mt-4 pt-1 space-y-1 font-label-sm text-label-sm font-mono border-t border-outline-variant/40">
+              <div className="flex items-center justify-between text-on-surface">
+                <span>Detour Ceiling: ≤ 35%</span>
+                <span className="text-secondary font-medium">Verified Partner</span>
+              </div>
+              <div className="text-outline">Shared carpool legs discounted 40%</div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            onClick={() => navigate('/academic')}
+            className="bg-surface-container-lowest p-4 border border-outline-variant shadow-sm flex flex-col justify-between cursor-pointer hover:border-secondary transition-all"
+          >
+            <div>
+              <div className="flex items-center justify-between pb-1">
+                <span className="font-label-sm text-label-sm text-outline uppercase tracking-wider font-mono">
+                  REF: PLACEMENT_RADAR
+                </span>
+                <span className="font-label-sm text-label-sm px-1.5 py-0.5 bg-secondary-fixed text-on-secondary-fixed font-semibold uppercase font-mono">
+                  TIER 1 READY
+                </span>
+              </div>
+              <div className="mt-1">
+                <span className="font-body-sm text-body-sm text-on-surface-variant block">Placement Readiness Index</span>
+                <h3 className="font-headline-sm text-headline-sm text-primary mt-0.5 font-bold">
+                  85% Prepared
+                </h3>
+              </div>
+            </div>
+            <div className="mt-4 pt-1 space-y-1 font-label-sm text-label-sm font-mono border-t border-outline-variant/40">
+              <div className="flex items-center justify-between text-on-surface">
+                <span>Core CS &amp; System Design</span>
+                <span className="text-secondary font-medium">3 Mentors Matched</span>
+              </div>
+              <div className="text-outline">Google &amp; Microsoft mock rounds active</div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Main Grid: 8 Cols Left (Timeline & Matches) + 4 Cols Right (Widgets) */}

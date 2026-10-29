@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db/connection.js';
 import { EnergyCarbonOracle } from '../algorithms/energy_oracle.js';
+import { requireRole } from '../middleware/auth.middleware.js';
 
 export const sustainabilityRouter = Router();
 
@@ -14,7 +15,7 @@ sustainabilityRouter.get('/services', (_req: Request, res: Response) => {
 });
 
 // POST /api/sustainability/workloads/:serviceId/scale
-sustainabilityRouter.post('/workloads/:serviceId/scale', (req: Request, res: Response) => {
+sustainabilityRouter.post('/workloads/:serviceId/scale', requireRole('admin'), (req: Request, res: Response) => {
   const { targetRps, currentReplicas } = req.body;
   const db = getDb();
   const svc = db.prepare('SELECT * FROM service_workloads WHERE id = ?').get(req.params.serviceId);
@@ -130,7 +131,7 @@ sustainabilityRouter.get('/scenarios', (_req: Request, res: Response) => {
 });
 
 // POST /api/sustainability/toggle-optimization
-sustainabilityRouter.post('/toggle-optimization', (req: Request, res: Response) => {
+sustainabilityRouter.post('/toggle-optimization', requireRole('admin'), (req: Request, res: Response) => {
   ecoOptimizationEnabled = req.body.enabled === true;
   res.json({ success: true, ecoOptimizationEnabled });
 });

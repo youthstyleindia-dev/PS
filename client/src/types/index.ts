@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'driver' | 'proctor' | 'admin';
+export type UserRole = 'student' | 'driver' | 'proctor' | 'ta_faculty' | 'warden' | 'admin';
 
 export interface User {
   id: string;
@@ -6,6 +6,7 @@ export interface User {
   email: string;
   avatar?: string;
   role: UserRole;
+  roles?: UserRole[];
   department?: string;
   yearOfStudy?: number;
   bio?: string;

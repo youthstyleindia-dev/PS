@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db/connection.js';
 import { PrivacyWellbeingOracle } from '../algorithms/privacy_oracle.js';
+import { requireResourceOwner } from '../middleware/auth.middleware.js';
 
 export const wellbeingRouter = Router();
 
@@ -113,7 +114,7 @@ wellbeingRouter.get('/sessions/:sessionId', (req: Request, res: Response) => {
 });
 
 // GET /api/wellbeing/sessions/user/:userId
-wellbeingRouter.get('/sessions/user/:userId', (req: Request, res: Response) => {
+wellbeingRouter.get('/sessions/user/:userId', requireResourceOwner('userId'), (req: Request, res: Response) => {
   const db = getDb();
   const sessions = db.prepare(`
     SELECT * FROM focus_sessions WHERE user_id = ? ORDER BY start_time DESC
@@ -154,7 +155,7 @@ wellbeingRouter.post('/events', (req: Request, res: Response) => {
 });
 
 // GET /api/wellbeing/rules/:userId
-wellbeingRouter.get('/rules/:userId', (req: Request, res: Response) => {
+wellbeingRouter.get('/rules/:userId', requireResourceOwner('userId'), (req: Request, res: Response) => {
   const db = getDb();
   const rules = db.prepare('SELECT * FROM domain_rules WHERE user_id = ? OR user_id IS NULL').all(req.params.userId);
   res.json(rules);
@@ -204,7 +205,7 @@ wellbeingRouter.get('/cohort-aggregate', (req: Request, res: Response) => {
 });
 
 // DELETE /api/wellbeing/history/:userId
-wellbeingRouter.delete('/history/:userId', (req: Request, res: Response) => {
+wellbeingRouter.delete('/history/:userId', requireResourceOwner('userId'), (req: Request, res: Response) => {
   const db = getDb();
   const userSessions = db.prepare('SELECT id FROM focus_sessions WHERE user_id = ?').all(req.params.userId) as any[];
   const sessionIds = userSessions.map((s) => s.id);

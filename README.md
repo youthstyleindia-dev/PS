@@ -1,10 +1,11 @@
 # UniVerse: An Intelligent, Sustainable, and Privacy-Aware Campus Ecosystem
 
-[![Tests](https://img.shields.io/badge/Tests-190%20Passing-brightgreen?style=flat-square)](./docs/TEST_PLAN.md)
+[![Tests](https://img.shields.io/badge/Tests-215%20Passing-brightgreen?style=flat-square)](./docs/TEST_RESULTS.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-v19-61dafb?style=flat-square)](https://react.dev/)
 [![Express](https://img.shields.io/badge/Express-v5-lightgrey?style=flat-square)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=flat-square)](https://www.sqlite.org/)
+[![RBAC](https://img.shields.io/badge/RBAC-6%20Roles%20Enforced-orange?style=flat-square)](./docs/ROLE_PERMISSION_MATRIX.md)
 [![Design System](https://img.shields.io/badge/Design-Google%20Stitch%20Brutalism-003FE1?style=flat-square)](./docs/COMPONENT_REUSE_REPORT.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
@@ -21,10 +22,10 @@ UniVerse is completely self-contained and runs locally on macOS, Linux, or Windo
 # 1. Clone & install root and client dependencies
 npm install && cd client && npm install && cd ..
 
-# 2. Run automated test suite (190 tests across 12 suites in ~1.7 seconds)
+# 2. Run automated test suite (215 tests across 13 suites in ~1.9 seconds)
 npm test
 
-# 3. Seed SQLite database with deterministic campus data
+# 3. Seed SQLite database with deterministic campus data & canonical personas
 npm run seed
 
 # 4. Start concurrent development server (Client on :5173, Server on :3001)
@@ -32,6 +33,31 @@ npm run dev
 ```
 
 Open your browser to: **`http://localhost:5173`**
+
+---
+
+## 🔐 Canonical Roles, Role Workspaces & Credentials
+
+UniVerse strictly enforces server-side and client-side RBAC across 6 canonical roles. Users only see and access workspaces permitted by their assigned roles:
+
+| Role Key | Persona / User Name | Campus Email | Pre-seeded Password | Authorized Workspace |
+| :--- | :--- | :--- | :--- | :--- |
+| `student` | Aarav Sharma | `aarav.sharma@campus.edu` | `password123` | Student Hub, Placement Radar, Carpool Booking, Focus Timer |
+| `driver` | Vikram Rao | `vikram.rao@campus.edu` | `password123` | Driver Console, Route Publishing, Detour Match Oracle |
+| `proctor` | Dr. Meenakshi Sundaram | `m.sundaram@campus.edu` | `password123` | Exam Review Tribunal, CV Observation Adjudication, Audit Trail |
+| `ta_faculty` | Dr. Priya Patel | `dr.patel@campus.edu` | `password123` | Academic Hub, Mentorship Registry, Course Resource Management |
+| `warden` | Campus Residential Warden | `warden@campus.edu` | `password123` | Residential Hall Overview, Student Transit & Campus Safety |
+| `admin` | Campus IT Operations | `admin@campus.edu` | `password123` | Green Cloud Telemetry, Workload Scaling, System Governance |
+
+### Dedicated Role Entry Points:
+- `/login/student` — Student Intelligence & Placement Portal
+- `/login/driver` — Transit Driver Operations Terminal
+- `/login/proctor` — Academic Integrity & Exam Tribunal Portal
+- `/login/ta_faculty` — Teaching Assistant & Faculty Portal
+- `/login/warden` — Residential Operations Portal
+- `/login/admin` — Campus IT Systems & Infrastructure Terminal
+
+*Note:* Attempting to log into a role portal without verified assignment in `role_assignments` yields `403 FORBIDDEN_ROLE_ACCESS`. In the header, the persona switcher only displays roles granted to the current account.
 
 ---
 

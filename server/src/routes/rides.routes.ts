@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db/connection.js';
 import { graphService } from '../services/graph.service.js';
+import { requireRole } from '../middleware/auth.middleware.js';
 import {
   rideMatchingService,
   normalizeVehicleType,
@@ -111,10 +112,11 @@ ridesRouter.get('/offers', (_req: Request, res: Response) => {
  * POST /api/rides/offers
  * Driver publishes a scheduled ride offer along campus graph
  */
-ridesRouter.post('/offers', (req: Request, res: Response) => {
+ridesRouter.post('/offers', requireRole('driver', 'admin'), (req: Request, res: Response) => {
   const { driverId, originNodeId, destinationNodeId, departureTime, totalSeats, vehicleType } = req.body;
+  const effectiveDriverId = (req.user && req.user.sub) ? req.user.sub : driverId;
 
-  if (!driverId || !originNodeId || !destinationNodeId || !departureTime || totalSeats === undefined) {
+  if (!effectiveDriverId || !originNodeId || !destinationNodeId || !departureTime || totalSeats === undefined) {
     return res.status(400).json({ error: 'Missing required ride offer fields' });
   }
 
@@ -153,7 +155,7 @@ ridesRouter.post('/offers', (req: Request, res: Response) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
   `).run(
     id,
-    driverId,
+    effectiveDriverId,
     dbOrigin,
     dbDest,
     departureTime,
@@ -178,6 +180,7 @@ ridesRouter.post('/offers', (req: Request, res: Response) => {
   res.status(201).json({
     success: true,
     offerId: id,
+    driverId: effectiveDriverId,
     driverRoute: path.path,
     distanceKm: path.totalDistanceKm,
     timeMins: path.totalTimeMins,

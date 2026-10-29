@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db/connection.js';
+import { requireRole } from '../middleware/auth.middleware.js';
 
 export const commonRouter = Router();
 
@@ -197,7 +198,7 @@ commonRouter.get('/notifications', (req: Request, res: Response): void => {
  * GET /api/users
  * List users with role and department filters
  */
-commonRouter.get('/users', (req: Request, res: Response): void => {
+commonRouter.get('/users', requireRole('admin'), (req: Request, res: Response): void => {
   const { role, department } = req.query;
   const db = getDb();
 

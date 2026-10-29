@@ -34,12 +34,19 @@
 
 ---
 
-## 2. Authentication & Security Scope
+## 2. Authentication, Authorization & Role Security Scope
 
-- **Hackathon Demo Persona Authentication**:
-  - The authentication system utilizes production-grade 10-round salted Bcrypt password hashing and signed HMAC-SHA256 JWT tokens.
-  - However, for ease of evaluation, four 1-click demo personas (`student`, `driver`, `proctor`, `admin`) are provided with documented mock credentials.
-  - In a hardened production deployment, integration with institutional SAML 2.0 / Shibboleth Single Sign-On, hardware MFA keys (WebAuthn), and distributed Redis token revocation caches would be required.
+- **Canonical Role Catalog Decisions**:
+  - `tax`: Investigated and confirmed to be an ecosystem economic metric flag (`"ECOSYSTEM: ZERO_COMMERCIAL_TAX"`) located in `client/src/pages/AboutPrinciplesPage.tsx`. It is strictly not a user role; attempts to authenticate with `role: 'tax'` are rejected with HTTP 400.
+  - `reviewer`: Not a separate role; it represents a functional attribute of an `exam_proctor` mapping to `reviewer_id` in examination tribunal tables.
+  - `ta_faculty`: Formalized canonical combination of TA and Teaching Faculty permissions (`ta_faculty`). Proctors (e.g. Dr. Meenakshi Sundaram) hold dual clearance across both `proctor` and `ta_faculty`.
+  - `warden`: Formalized canonical campus residential operations role (`warden`) with residence hall oversight and transit overview permissions.
+- **Hackathon Demo Persona Switches vs Production Access**:
+  - The authentication system utilizes production-grade 10-round salted Bcrypt password hashing, signed HMAC-SHA256 JWT tokens, and stateful session revocation in `auth_sessions`.
+  - For evaluator convenience, six authenticated demo personas (`student`, `driver`, `proctor`, `ta_faculty`, `warden`, `admin`) are provided. In previous revisions, the UI permitted arbitrary persona switching across any role. In this rebuild, the quick persona switcher in the header is strictly restricted to roles explicitly assigned to that user in `role_assignments`.
+  - For full institutional production deployment, integration with enterprise SAML 2.0 / Shibboleth Single Sign-On, hardware MFA keys (WebAuthn), and distributed Redis token revocation caches would be required.
+- **SQLite Single-Process Concurrency**:
+  - SQLite WAL mode enables concurrent readers alongside a serialized writer, ideal for single-node campus deployments. Horizontal multi-node clustering would require PostgreSQL with Row Level Security (RLS) policies matching our Express RBAC middleware.
 
 ---
 

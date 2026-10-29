@@ -1,10 +1,11 @@
-import { UserRole } from './common.types.js';
+import { UserRole, CanonicalRole } from './common.types.js';
 
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  roles?: UserRole[];
   avatar?: string;
   department?: string;
   year_of_study?: number;
@@ -18,6 +19,7 @@ export interface JwtTokenPayload {
   sub: string;
   email: string;
   role: UserRole;
+  roles?: UserRole[];
   name: string;
   department?: string;
   iat?: number;
@@ -62,6 +64,9 @@ export interface AuthResponse {
   session?: {
     id: string;
     expiresAt: string;
+    userId?: string;
+    isRevoked?: boolean;
+    createdAt?: string;
   };
 }
 
@@ -69,16 +74,24 @@ export type AuthEventType =
   | 'LOGIN_SUCCESS'
   | 'LOGIN_FAILED'
   | 'LOGOUT'
-  | 'REGISTER'
+  | 'PASSWORD_CHANGED'
   | 'PASSWORD_CHANGE'
+  | 'REGISTER'
+  | 'REGISTER_SUCCESS'
+  | 'ROLE_DENIED'
+  | 'TOKEN_REVOKED'
+  | 'ROLE_GRANTED'
+  | 'ROLE_REVOKED'
   | 'SESSION_REVOKED'
-  | 'TOKEN_REFRESH';
+  | (string & {});
 
-export interface AuthAuditLogItem {
+export type AuthAuditLogItem = AuthAuditEntry;
+
+export interface AuthAuditEntry {
   id: string;
   userId?: string;
   email: string;
-  eventType: AuthEventType;
+  eventType: string;
   ipAddress?: string;
   userAgent?: string;
   metadata?: Record<string, any>;

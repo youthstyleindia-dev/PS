@@ -48,7 +48,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileNav }) => {
     student: { label: 'Student Scholar', badge: 'STU', color: 'bg-secondary text-on-secondary', desc: 'Placement Hub, Radar Skill Tree & Pool Bookings' },
     driver: { label: 'Transit Driver', badge: 'DRV', color: 'bg-emerald-600 text-white', desc: 'Topological Corridors, Detour Limits & Avoided CO₂' },
     proctor: { label: 'Exam Proctor', badge: 'PRC', color: 'bg-amber-600 text-white', desc: 'Responsible Human-in-the-Loop Tribunal & Mode 2 CV' },
-    admin: { label: 'System Admin', badge: 'ADM', color: 'bg-purple-600 text-white', desc: 'Sustainable HPC Orchestration & PUE Monitoring' }
+    ta_faculty: { label: 'Faculty / TA', badge: 'FAC', color: 'bg-blue-600 text-white', desc: 'Mentorship Applications, Advising & Study Resources' },
+    warden: { label: 'Campus Warden', badge: 'WAR', color: 'bg-teal-600 text-white', desc: 'Residential Operations, Transit Safety & Campus Alerts' },
+    admin: { label: 'System Admin', badge: 'ADM', color: 'bg-purple-600 text-white', desc: 'Sustainable HPC Orchestration & Enclave Health' }
   };
 
   const handleRoleSelect = async (newRole: UserRole) => {
@@ -144,11 +146,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileNav }) => {
             {showRoleDropdown && (
               <div className="absolute right-0 mt-2 w-72 bg-surface-container-lowest border border-outline-variant shadow-2xl z-50 p-2 font-mono text-xs">
                 <div className="px-2 py-1.5 border-b border-outline-variant mb-1 flex items-center justify-between">
-                  <span className="font-bold text-primary uppercase text-[10px]">Switch Perspective</span>
-                  <span className="text-[10px] text-secondary font-bold">[1-CLICK SWITCH]</span>
+                  <span className="font-bold text-primary uppercase text-[10px]">Switch Workspace</span>
+                  <span className="text-[10px] text-secondary font-bold">[VERIFIED ROLES]</span>
                 </div>
-                {(['student', 'driver', 'proctor', 'admin'] as UserRole[]).map((r) => {
-                  const cfg = roleDisplayNames[r];
+                {((user?.roles && user.roles.length > 0 ? user.roles : (user?.role ? [user.role] : ['student'])) as UserRole[]).map((r) => {
+                  const cfg = roleDisplayNames[r] || { label: r, badge: r.substring(0, 3).toUpperCase(), color: 'bg-primary text-on-primary', desc: 'Campus role' };
                   const isCurrent = user?.role === r;
                   return (
                     <button

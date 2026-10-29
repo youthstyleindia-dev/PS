@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { UserRole } from '../types/common.types.js';
+import { getDb } from '../db/connection.js';
 
 export const authRouter = Router();
 
@@ -52,6 +53,40 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
       message: 'Logged in successfully'
     });
   } catch (err: any) {
+    res.status(401).json({
+      error: {
+        code: 'UNAUTHORIZED',
+        message: err.message || 'Invalid credentials'
+      }
+    });
+  }
+});
+
+/**
+ * POST /api/auth/login/:roleKey
+ * Authenticate with email and password specifically for a role entry point.
+ * Verifies password AND verifies the account actually has that role assigned.
+ */
+authRouter.post('/login/:roleKey', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const meta = getClientMeta(req);
+    const targetRole = req.params.roleKey as UserRole;
+    const result = await AuthService.loginWithRole(req.body, targetRole, meta);
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: `Logged in to ${targetRole} workspace successfully`
+    });
+  } catch (err: any) {
+    if (err.code === 'ROLE_NOT_ASSIGNED') {
+      res.status(403).json({
+        error: {
+          code: 'ROLE_NOT_ASSIGNED',
+          message: err.message || 'Account is not assigned to the requested workspace'
+        }
+      });
+      return;
+    }
     res.status(401).json({
       error: {
         code: 'UNAUTHORIZED',
@@ -234,4 +269,89 @@ authRouter.get('/audit', requireAuth, (req: Request, res: Response): void => {
       }
     });
   }
+});
+
+/**
+ * POST /api/auth/roles/assign
+ * Administrator endpoint to grant a canonical role to a user
+ */
+authRouter.post('/roles/assign', requireAuth, (req: Request, res: Response): void => {
+  if (req.user!.role !== 'admin' && !(req.user!.roles && req.user!.roles.includes('admin'))) {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Administrative clearance required to assign roles.'
+      }
+    });
+    return;
+  }
+
+  const { userId, roleKey, reason } = req.body;
+  if (!userId || !roleKey) {
+    res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'userId and roleKey are required.' } });
+    return;
+  }
+
+  const validRoles = ['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin'];
+  if (!validRoles.includes(roleKey)) {
+    res.status(400).json({ error: { code: 'BAD_REQUEST', message: `Invalid roleKey '${roleKey}'. Must be one of [${validRoles.join(', ')}].` } });
+    return;
+  }
+
+  const db = getDb();
+  const assignmentId = `ra_${userId}_${roleKey}_${Date.now()}`;
+  db.prepare(`
+    INSERT INTO role_assignments (id, user_id, role_key, status, granted_by_user_id, reason)
+    VALUES (?, ?, ?, 'active', ?, ?)
+    ON CONFLICT(user_id, role_key) DO UPDATE SET status = 'active', revoked_at = NULL, granted_at = CURRENT_TIMESTAMP
+  `).run(assignmentId, userId, roleKey, req.user!.sub, reason || 'Granted by administrator');
+
+  AuthService.logAuthEvent('ROLE_GRANTED' as any, req.user!.email, {
+    userId,
+    metadata: { assignedRole: roleKey, grantedBy: req.user!.sub, reason }
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Role '${roleKey}' successfully assigned to user '${userId}'.`
+  });
+});
+
+/**
+ * POST /api/auth/roles/revoke
+ * Administrator endpoint to revoke a role assignment
+ */
+authRouter.post('/roles/revoke', requireAuth, (req: Request, res: Response): void => {
+  if (req.user!.role !== 'admin' && !(req.user!.roles && req.user!.roles.includes('admin'))) {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Administrative clearance required to revoke roles.'
+      }
+    });
+    return;
+  }
+
+  const { userId, roleKey } = req.body;
+  if (!userId || !roleKey) {
+    res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'userId and roleKey are required.' } });
+    return;
+  }
+
+  const db = getDb();
+  db.prepare(`
+    UPDATE role_assignments
+    SET status = 'revoked', revoked_at = CURRENT_TIMESTAMP
+    WHERE user_id = ? AND role_key = ?
+  `).run(userId, roleKey);
+
+  AuthService.logAuthEvent('ROLE_REVOKED' as any, req.user!.email, {
+    userId,
+    metadata: { revokedRole: roleKey, revokedBy: req.user!.sub }
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `Role '${roleKey}' successfully revoked from user '${userId}'.`
+  });
 });

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT,
   avatar TEXT,
-  role TEXT NOT NULL CHECK(role IN ('student', 'driver', 'proctor', 'admin')),
+  role TEXT NOT NULL CHECK(role IN ('student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin', 'faculty')),
   department TEXT,
   year_of_study INTEGER,
   bio TEXT,
@@ -23,6 +23,41 @@ CREATE TABLE IF NOT EXISTS users (
   last_login TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS role_assignments (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role_key TEXT NOT NULL CHECK(role_key IN ('student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'revoked', 'expired')),
+  granted_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  granted_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at TEXT,
+  revoked_at TEXT,
+  reason TEXT
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_role_assignments_active ON role_assignments(user_id, role_key) WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS role_invitations (
+  id TEXT PRIMARY KEY,
+  email_normalized TEXT NOT NULL,
+  role_key TEXT NOT NULL CHECK(role_key IN ('student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin')),
+  token_hash TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  revoked_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -339,6 +374,16 @@ CREATE TABLE IF NOT EXISTS exam_sessions (
   candidate_station_zone TEXT NOT NULL DEFAULT '{"x": 100, "y": 80, "w": 440, "h": 320}',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS exam_session_assignments (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES exam_sessions(id) ON DELETE CASCADE,
+  proctor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'completed', 'revoked'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_exam_session_proctor_active ON exam_session_assignments(session_id, proctor_id) WHERE status = 'active';
 
 CREATE TABLE IF NOT EXISTS observation_events (
   id TEXT PRIMARY KEY,

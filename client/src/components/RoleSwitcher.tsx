@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserRole } from '../types';
-import { User, Shield, Car, GraduationCap, ChevronDown, Check } from 'lucide-react';
+import { User, Shield, Car, GraduationCap, ChevronDown, Check, BookOpen, Home } from 'lucide-react';
 
 export interface RoleConfigItem {
   label: string;
@@ -43,6 +43,26 @@ export const roleConfigs: Record<UserRole, RoleConfigItem> = {
     color: 'text-amber-400 border-amber-400/30 bg-amber-500/10',
     badge: 'Dr. Meenakshi Sundaram',
     desc: 'Review CV event detections, dismiss false positives, audit logs'
+  },
+  ta_faculty: {
+    label: 'Faculty & TA Perspective',
+    name: 'Dr. Priya Patel',
+    code: 'FAC_AI_208',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya',
+    icon: BookOpen,
+    color: 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10',
+    badge: 'Dr. Priya Patel (AI Dept)',
+    desc: 'Manage courses, academic assessments, mentorship and sessions'
+  },
+  warden: {
+    label: 'Campus Warden Perspective',
+    name: 'Campus Residential Warden',
+    code: 'RES_WARDEN_01',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Warden',
+    icon: Home,
+    color: 'text-orange-400 border-orange-400/30 bg-orange-500/10',
+    badge: 'Residential Operations',
+    desc: 'Residence hall oversight, transit permits, and student safety'
   },
   admin: {
     label: 'System Admin',

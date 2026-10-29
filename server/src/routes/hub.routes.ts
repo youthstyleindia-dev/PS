@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db/connection.js';
+import { requireResourceOwner } from '../middleware/auth.middleware.js';
 import {
   calculateReadinessScore,
   calculateMilestoneProgress,
@@ -89,7 +90,7 @@ hubRouter.get('/profile/:studentId', (req: Request, res: Response): void => {
  * PUT /api/hub/profile/:studentId
  * Update student profile skills, interests, target role, placement goals, resume
  */
-hubRouter.put('/profile/:studentId', (req: Request, res: Response): void => {
+hubRouter.put('/profile/:studentId', requireResourceOwner('studentId'), (req: Request, res: Response): void => {
   const { studentId } = req.params;
   const { skills, interests, targetRole, placementGoals, resumeUrl, gpa } = req.body;
   const db = getDb();
@@ -214,7 +215,7 @@ hubRouter.get('/placement-milestones/:studentId', (req: Request, res: Response):
  * POST /api/hub/placement-milestones/:studentId/toggle
  * Toggle milestone status between 'completed' and 'pending'
  */
-hubRouter.post('/placement-milestones/:studentId/toggle', (req: Request, res: Response): void => {
+hubRouter.post('/placement-milestones/:studentId/toggle', requireResourceOwner('studentId'), (req: Request, res: Response): void => {
   const { studentId } = req.params;
   const { milestoneId } = req.body;
   const db = getDb();
