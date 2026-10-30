@@ -1,11 +1,11 @@
 # UniVerse — Automated Test Execution & Verification Report
 
-> **Execution Date:** 2026-10-30T01:18:55+05:30  
+> **Execution Date:** 2026-10-30T05:39:34+05:30  
 > **Test Framework:** Vitest v3.2.7 (Node.js runtime)  
-> **Total Test Suites:** 13 passed of 13  
-> **Total Tests:** 215 passed of 215  
+> **Total Test Suites:** 21 passed of 21  
+> **Total Tests:** 305 passed of 305  
 > **Failures / Regressions:** 0  
-> **Execution Duration:** 1.94 seconds  
+> **Execution Duration:** 6.28 seconds  
 
 ---
 
@@ -24,20 +24,27 @@ vitest run
 
 | Suite Path | Test Count | Duration | Focus Area |
 | :--- | :--- | :--- | :--- |
-| `tests/security/role_matrix.test.ts` | 25 tests | 811ms | RBAC, Role Entry Points, IDOR Protection, Privilege Escalation Defense |
-| `tests/unit/auth.test.ts` | 12 tests | 1161ms | Bcrypt Hashing, Session Revocation, JWT Signing, Audit Logging |
-| `tests/e2e/tier1_features.test.ts` | 33 tests | 212ms | Core Module Endpoints across Hub, Rides, Energy, Wellbeing, Exams |
-| `tests/adversarial/m1_stress_challenge.test.ts` | 21 tests | 137ms | Academic Hub Stress, Edge Cases, Boundary Validation |
-| `tests/adversarial/m2_stress_challenge.test.ts` | 28 tests | 118ms | Ride-Pooling Dijkstra Stress, Detour Calculations, Graph Contention |
-| `tests/adversarial/m2_ride_ui_stress.test.ts` | 14 tests | 62ms | Ride-Pooling UI Fallbacks, Offline Fixtures, Service Resilience |
-| `tests/e2e/tier2_boundaries.test.ts` | 18 tests | 155ms | Boundary Value Analysis across Workloads, Exams, Ratings |
+| `tests/unit/auth.test.ts` | 12 tests | 945ms | Bcrypt Hashing, Session Revocation, JWT Signing, Audit Logging |
+| `tests/security/role_matrix.test.ts` | 25 tests | 391ms | RBAC, Role Entry Points, IDOR Protection, Privilege Escalation Defense |
+| `tests/security/role_isolation_matrix.test.ts` | 8 tests | 31ms | Cross-role horizontal/vertical access denials, Warden/Proctor limits |
+| `tests/e2e/tier1_features.test.ts` | 33 tests | 129ms | Core Module Endpoints across Hub, Rides, Energy, Wellbeing, Exams |
+| `tests/e2e/tier2_boundaries.test.ts` | 18 tests | 73ms | Boundary Value Analysis across Workloads, Exams, Ratings |
+| `tests/e2e/tier3_pairwise.test.ts` | 8 tests | 56ms | Combinatorial Input Combinations and Interaction Coverage |
+| `tests/e2e/tier4_scenarios.test.ts` | 4 tests | 58ms | High-Stress Complex Campus Day Scenarios |
+| `tests/e2e/campus_feed.test.ts` | 8 tests | 36ms | Campus Feed post creation, category filtering, reactions, comments, bookmarks |
+| `tests/e2e/senior_mentorship.test.ts` | 6 tests | 31ms | ML mentor discovery, explainable scoring, request submission, mentor conversation |
+| `tests/e2e/campus_copilot.test.ts` | 5 tests | 30ms | Grounded AI queries, source citations, proposed action confirmation lifecycle |
+| `tests/integration/campus_operations.test.ts` | 22 tests | 62ms | Campus directory, events RSVP, community joins, facility issue tickets |
 | `tests/integration/full_ecosystem.test.ts` | 20 tests | 113ms | Multi-Module Integration Flows, Cross-Service Data Pipeline |
-| `tests/e2e/tier3_pairwise.test.ts` | 8 tests | 116ms | Combinatorial Input Combinations and Interaction Coverage |
-| `tests/e2e/tier4_scenarios.test.ts` | 4 tests | 119ms | High-Stress Complex Campus Day Scenarios |
-| `tests/unit/graph_matching.test.ts` | 13 tests | 14ms | Graph Edge Cost, Dijkstra Shortest Path, Ride Pooling Ratios |
-| `tests/unit/privacy_dp.test.ts` | 10 tests | 9ms | Differential Privacy Laplace Mechanism, Sensitivity, Epsilon |
-| `tests/unit/energy_carbon.test.ts` | 9 tests | 3ms | PUE Formulas, Cloud Carbon Footprint Estimations, Watts to Carbon |
-| **TOTALS** | **215 tests** | **1.94s** | **100% Pass Rate (0 Failures)** |
+| `tests/integration/exam_monitor_api.test.ts` | 12 tests | 41ms | Exam session provisioning, event streaming, proctor adjudication |
+| `tests/adversarial/m1_stress_challenge.test.ts` | 21 tests | 62ms | Academic Hub Stress, Edge Cases, Boundary Validation |
+| `tests/adversarial/m2_stress_challenge.test.ts` | 28 tests | 61ms | Ride-Pooling Dijkstra Stress, Detour Calculations, Graph Contention |
+| `tests/adversarial/m2_ride_ui_stress.test.ts` | 14 tests | 35ms | Ride-Pooling UI Fallbacks, Offline Fixtures, Service Resilience |
+| `tests/unit/graph_matching.test.ts` | 13 tests | 6ms | Graph Edge Cost, Dijkstra Shortest Path, Ride Pooling Ratios |
+| `tests/unit/exam_vision_algorithms.test.ts` | 15 tests | 3ms | Computer vision event heuristics, gaze tracking, audio anomalies |
+| `tests/unit/privacy_dp.test.ts` | 10 tests | 2ms | Differential Privacy Laplace Mechanism, Sensitivity, Epsilon |
+| `tests/unit/energy_carbon.test.ts` | 9 tests | 2ms | PUE Formulas, Cloud Carbon Footprint Estimations, Watts to Carbon |
+| **TOTALS** | **305 tests** | **6.28s** | **100% Pass Rate (0 Failures)** |
 
 ---
 

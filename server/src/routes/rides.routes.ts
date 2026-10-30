@@ -436,3 +436,130 @@ ridesRouter.get('/summary', (_req: Request, res: Response) => {
     provenance: '[ESTIMATED METRIC]',
   });
 });
+
+// ============================================================================
+// 7. TRANSIT DRIVER OPERATIONS & TRIP LIFECYCLE
+// ============================================================================
+
+/**
+ * GET /api/rides/driver/trips
+ * Driver views their own published trips and passenger manifests
+ */
+ridesRouter.get('/driver/trips', (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const db = getDb();
+  const driverId = req.user.sub;
+  const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+
+  const whereClause = isAdmin ? '' : 'WHERE ro.driver_id = ?';
+  const params = isAdmin ? [] : [driverId];
+
+  const offers = db.prepare(`
+    SELECT ro.*, u.name as driver_name, u.avatar as driver_avatar
+    FROM ride_offers ro
+    JOIN users u ON ro.driver_id = u.id
+    ${whereClause}
+    ORDER BY ro.departure_time DESC
+  `).all(...params) as any[];
+
+  const tripsWithManifest = offers.map(offer => {
+    const passengers = db.prepare(`
+      SELECT rb.*, rm.offer_id, u.name as passenger_name, u.email as passenger_email, u.avatar as passenger_avatar
+      FROM ride_bookings rb
+      JOIN ride_matches rm ON rb.match_id = rm.id
+      JOIN users u ON rb.passenger_id = u.id
+      WHERE rm.offer_id = ? AND rm.status != 'cancelled'
+    `).all(offer.id) as any[];
+
+    return {
+      ...offer,
+      passengers,
+      passengerCount: passengers.reduce((sum, p) => sum + (p.seats_booked || 1), 0)
+    };
+  });
+
+  res.json({
+    success: true,
+    data: {
+      offers: tripsWithManifest,
+      total: tripsWithManifest.length
+    },
+    trips: tripsWithManifest
+  });
+});
+
+/**
+ * PATCH /api/rides/offers/:offerId/status
+ * Driver updates trip lifecycle: open -> ready -> in_progress -> completed / cancelled
+ */
+ridesRouter.patch('/offers/:offerId/status', (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const { offerId } = req.params;
+  const { status, notes } = req.body;
+  const db = getDb();
+
+  const offer = db.prepare('SELECT * FROM ride_offers WHERE id = ?').get(offerId) as any;
+  if (!offer) {
+    return res.status(404).json({ error: 'Ride offer not found' });
+  }
+
+  const isOwner = offer.driver_id === req.user.sub;
+  const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+  if (!isOwner && !isAdmin) {
+    return res.status(403).json({ error: 'Forbidden: Only the owning driver or administrator can update trip status' });
+  }
+
+  const validStatuses = ['open', 'ready', 'in_progress', 'completed', 'cancelled'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+  }
+
+  db.prepare(`
+    UPDATE ride_offers
+    SET status = ?
+    WHERE id = ?
+  `).run(status, offerId);
+
+  // Notify confirmed passengers of trip state change
+  try {
+    const passengers = db.prepare(`
+      SELECT rb.passenger_id
+      FROM ride_bookings rb
+      JOIN ride_matches rm ON rb.match_id = rm.id
+      WHERE rm.offer_id = ?
+    `).all(offerId) as any[];
+    for (const p of passengers) {
+      db.prepare(`
+        INSERT INTO notifications (id, user_id, title, message, module, type, is_read, link_url)
+        VALUES (?, ?, ?, ?, 'rides', 'info', 0, '/rides')
+      `).run(
+        `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        p.passenger_id,
+        `Transit Update: Trip is now ${status.toUpperCase().replace('_', ' ')}`,
+        notes || `Your ride departing at ${offer.departure_time} is now ${status}.`,
+        '/rides'
+      );
+    }
+  } catch {
+    // Non-critical notification failure
+  }
+
+  res.json({
+    success: true,
+    data: {
+      offerId,
+      status,
+      previousStatus: offer.status
+    },
+    offerId,
+    previousStatus: offer.status,
+    newStatus: status,
+    message: `Trip status successfully updated to ${status}`
+  });
+});

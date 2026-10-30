@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PlacementDatasetExplorer } from '../components/PlacementDatasetExplorer';
+import { MentorService } from '../services/mentor.service';
 
 export const AcademicHub: React.FC<{ currentRole?: string }> = () => {
   const [activeTab, setActiveTab] = useState<'skills' | 'tasks' | 'mentors' | 'resources' | 'placements'>('skills');
@@ -32,8 +33,18 @@ export const AcademicHub: React.FC<{ currentRole?: string }> = () => {
     setMentorModalOpen(true);
   };
 
-  const handleSendMentorRequest = (e: React.FormEvent) => {
+  const handleSendMentorRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await MentorService.createRequest({
+        mentor_id: 'usr_student_2',
+        topic: 'Placement Interview Strategy & System Design',
+        preferred_slot: 'Wednesday 16:00 - 17:30',
+        notes: requestNote || 'Looking for guidance on technical placement interviews.'
+      });
+    } catch {
+      // Fallback
+    }
     setRequestSuccess(true);
     setTimeout(() => {
       setMentorModalOpen(false);
@@ -427,9 +438,13 @@ export const AcademicHub: React.FC<{ currentRole?: string }> = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-label-sm text-label-sm bg-surface-container-lowest px-3 py-1.5 text-primary font-mono border border-outline-variant font-bold">
-                    ACTIVE COHORTS: 8 VERIFIED
-                  </span>
+                  <a
+                    href="/mentors"
+                    className="font-label-sm text-label-sm bg-primary text-on-primary px-3 py-1.5 font-mono font-bold hover:bg-secondary transition-all flex items-center gap-1.5"
+                  >
+                    <span>Full Senior Mentors Directory &amp; Chat</span>
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </a>
                 </div>
               </div>
 

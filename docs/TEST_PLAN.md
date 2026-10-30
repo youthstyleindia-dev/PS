@@ -3,7 +3,7 @@
 > **Testing Framework**: Vitest v3.2.7 + Supertest v7.3.1  
 > **Database Engine**: In-memory and WAL-mode SQLite with Foreign Keys enabled  
 > **Execution Command**: `npm test`  
-> **Status**: **190 / 190 tests passing (100%) across 12 test suites in ~1.70s**  
+> **Status**: **305 / 305 tests passing (100%) across 21 test suites in ~6.28s**  
 
 ---
 
@@ -16,17 +16,25 @@ UniVerse adheres to an **anti-mocking, objective-verification** testing methodol
 ## 2. Test Execution Command
 
 ```bash
-# Execute entire 190-test automated suite in ~1.7s
+# Execute entire 305-test automated suite in ~6.2s
 npm test
 ```
 
 ---
 
-## 3. Test Suites Breakdown (190 Tests across 12 Suites)
+## 3. Test Suites Breakdown (305 Tests across 21 Suites)
 
 | Suite File | Scope | Test Count | Pass Rate | Key Invariants Tested |
 | :--- | :--- | :---: | :---: | :--- |
 | **`tests/unit/auth.test.ts`** | Security & Auth Engine | **12** | **100%** | Salted Bcrypt 10-round password hashing, HMAC-SHA256 JWT claim verification, session registry revocation, audit logging, RBAC middleware. |
+| **`tests/security/role_matrix.test.ts`** | Role-Based Access Control | **25** | **100%** | Role-specific login endpoints, forbidden role access rejections (403), vertical privilege boundaries, IDOR resistance. |
+| **`tests/security/role_isolation_matrix.test.ts`** | Cross-Role Boundary Matrix | **8** | **100%** | Cross-role horizontal/vertical access denials, Warden/Proctor boundaries, unassigned conversation leaks defense. |
+| **`tests/e2e/campus_feed.test.ts`** | Campus Feed Workflows | **8** | **100%** | Post publishing, category filtering, reactions, comments, bookmarks, and author permission deletion guards. |
+| **`tests/e2e/senior_mentorship.test.ts`** | Senior Mentorship Network | **6** | **100%** | Senior search by domain/skill, explainable match breakdown, request lifecycle, conversation auto-provisioning, participant privacy. |
+| **`tests/e2e/campus_copilot.test.ts`** | AI Copilot & Actions | **5** | **100%** | Grounded query answers, factual citations from SQLite, proposed mutating action cards, user confirmation workflow. |
+| **`tests/integration/campus_operations.test.ts`** | Campus Ops & Directory | **22** | **100%** | Directory queries, community join/leave toggling, event RSVP, facility defect submission and warden status updates. |
+| **`tests/integration/exam_monitor_api.test.ts`** | Exam Review Lifecycle | **12** | **100%** | Exam session provisioning, event streaming, human proctor review adjudication, immutable audit logging. |
+| **`tests/unit/exam_vision_algorithms.test.ts`** | Exam Heuristic Integrity | **15** | **100%** | Non-punitive vision event heuristics, gaze direction thresholding, multiple faces detection, audio anomaly boundaries. |
 | **`tests/unit/graph_matching.test.ts`** | Module B Algorithms | **13** | **100%** | Dijkstra path optimality, congestion multipliers $c(t)$, Dial-a-Ride insertion, detour ratio ceiling $\le 35\%$, seat capacity enforcement. |
 | **`tests/unit/energy_carbon.test.ts`** | Module C Algorithms | **9** | **100%** | Non-linear power model $P(U)$, single PUE facility scaling, diurnal regional grid carbon factor, baseline vs. optimized delta arithmetic. |
 | **`tests/unit/privacy_dp.test.ts`** | Module D Algorithms | **10** | **100%** | Local URL hostname sanitization (stripping tokens/passwords/paths), Laplace noise injection symmetry, $k$-anonymity suppression ($k \ge 3$), Deep Work Index formulation. |
@@ -38,7 +46,7 @@ npm test
 | **`tests/adversarial/m2_stress_challenge.test.ts`** | Adversarial Security M2 | **28** | **100%** | Route manipulation resistance, overbooking race prevention, negative seat count rejection, wellbeing state machine tampering. |
 | **`tests/adversarial/m2_ride_ui_stress.test.ts`** | Ride UI & Visualizer Stress | **14** | **100%** | Offline fallback structures, SVG map node coordinate integrity, detour envelope visual rendering, dynamic vehicle puck tracking. |
 | **`tests/integration/full_ecosystem.test.ts`** | Express 5 Live HTTP | **20** | **100%** | Live HTTP requests over `supertest` verifying all endpoints across `/api/health`, `/api/auth`, `/api/hub`, `/api/rides`, `/api/sustainability`, `/api/wellbeing`, `/api/exams`. |
-| **TOTAL** | **Full System** | **190** | **100%** | **All 190 tests passing cleanly in ~1.70s** |
+| **TOTAL** | **Full System** | **305** | **100%** | **All 305 tests passing cleanly across 21 test suites** |
 
 ---
 

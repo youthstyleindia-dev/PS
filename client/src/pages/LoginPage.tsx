@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTarget = (location.state as any)?.from?.pathname || '/app';
   const { roleKey } = useParams<{ roleKey?: string }>();
   const { login, loginWithRole, demoLogin, register, error, clearError } = useAuth();
 
@@ -177,7 +179,7 @@ export const LoginPage: React.FC = () => {
           year_of_study: 1
         });
       }
-      navigate('/app');
+      navigate(redirectTarget);
     } catch {
       // Error handled by AuthContext
     } finally {
@@ -195,7 +197,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await demoLogin(personaRole);
-      navigate('/app');
+      navigate(redirectTarget);
     } catch (err: any) {
       console.error(err);
     } finally {

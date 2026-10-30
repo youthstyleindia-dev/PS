@@ -230,6 +230,57 @@ CREATE TABLE IF NOT EXISTS exam_audit_log (
   FOREIGN KEY (event_id) REFERENCES exam_events(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS vision_model_registry (
+  id TEXT PRIMARY KEY,
+  model_key TEXT NOT NULL,
+  model_name TEXT NOT NULL,
+  model_version TEXT NOT NULL,
+  artifact_filename TEXT NOT NULL,
+  artifact_sha256 TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  license_identifier TEXT NOT NULL,
+  model_card_url TEXT NOT NULL,
+  runtime_package TEXT NOT NULL,
+  runtime_package_version TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  verified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS exam_vision_consents (
+  id TEXT PRIMARY KEY,
+  exam_session_id TEXT NOT NULL,
+  candidate_user_id TEXT NOT NULL,
+  consent_version TEXT NOT NULL DEFAULT 'v1.0',
+  consent_status TEXT NOT NULL CHECK(consent_status IN ('granted', 'declined', 'withdrawn')),
+  explanation_version TEXT NOT NULL DEFAULT 'v1.0',
+  granted_at TEXT,
+  withdrawn_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS exam_vision_rule_versions (
+  id TEXT PRIMARY KEY,
+  rule_key TEXT NOT NULL,
+  version TEXT NOT NULL,
+  configuration_json TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  effective_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  author TEXT NOT NULL DEFAULT 'SYSTEM',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS exam_observation_audit (
+  id TEXT PRIMARY KEY,
+  observation_id TEXT NOT NULL,
+  exam_session_id TEXT NOT NULL,
+  actor_id TEXT,
+  actor_role TEXT NOT NULL,
+  action TEXT NOT NULL,
+  details_json TEXT NOT NULL DEFAULT '{}',
+  timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Common & Integration Architecture
 CREATE TABLE IF NOT EXISTS activity_log (
   id TEXT PRIMARY KEY,
@@ -248,4 +299,224 @@ CREATE TABLE IF NOT EXISTS notifications (
   type TEXT DEFAULT 'info' CHECK(type IN ('info', 'success', 'warning', 'urgent')),
   read INTEGER DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Feed, Communities, Mentorship & Copilot Tables
+CREATE TABLE IF NOT EXISTS feed_posts (
+  id TEXT PRIMARY KEY,
+  author_id TEXT NOT NULL,
+  campus_id TEXT NOT NULL DEFAULT 'main_campus',
+  post_type TEXT NOT NULL,
+  title TEXT,
+  body TEXT NOT NULL,
+  tags TEXT NOT NULL DEFAULT '[]',
+  visibility TEXT NOT NULL DEFAULT 'campus',
+  attachment_metadata TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'published',
+  likes_count INTEGER NOT NULL DEFAULT 0,
+  comments_count INTEGER NOT NULL DEFAULT 0,
+  bookmarks_count INTEGER NOT NULL DEFAULT 0,
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS feed_comments (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL,
+  author_id TEXT NOT NULL,
+  parent_id TEXT,
+  content TEXT NOT NULL,
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS feed_reactions (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  reaction_type TEXT NOT NULL DEFAULT 'like',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, post_id, reaction_type)
+);
+
+CREATE TABLE IF NOT EXISTS feed_bookmarks (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, post_id)
+);
+
+CREATE TABLE IF NOT EXISTS feed_follows (
+  id TEXT PRIMARY KEY,
+  follower_id TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(follower_id, target_type, target_id)
+);
+
+CREATE TABLE IF NOT EXISTS feed_reports (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL,
+  reporter_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  reviewed_by TEXT,
+  reviewed_at TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS communities (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL,
+  avatar TEXT,
+  member_count INTEGER NOT NULL DEFAULT 0,
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS community_memberships (
+  id TEXT PRIMARY KEY,
+  community_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'member',
+  joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(community_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS campus_events (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL,
+  organizer_id TEXT NOT NULL,
+  community_id TEXT,
+  venue TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  capacity INTEGER NOT NULL DEFAULT 50,
+  rsvp_count INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'upcoming',
+  tags TEXT NOT NULL DEFAULT '[]',
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_registrations (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'confirmed',
+  registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(event_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS campus_locations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  building TEXT NOT NULL,
+  zone TEXT NOT NULL,
+  description TEXT NOT NULL,
+  hours TEXT NOT NULL DEFAULT '08:00 - 20:00',
+  accessibility TEXT NOT NULL DEFAULT 'Wheelchair accessible, elevator access',
+  coord_x REAL NOT NULL DEFAULT 0.0,
+  coord_y REAL NOT NULL DEFAULT 0.0,
+  node_id TEXT,
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS campus_announcements (
+  id TEXT PRIMARY KEY,
+  author_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'campus',
+  priority TEXT NOT NULL DEFAULT 'normal',
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS mentorship_conversations (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL,
+  mentee_id TEXT NOT NULL,
+  mentor_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(request_id)
+);
+
+CREATE TABLE IF NOT EXISTS mentorship_messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL,
+  sender_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  is_read INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS assistant_conversations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT 'Campus Query',
+  model TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS assistant_messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  sources_json TEXT NOT NULL DEFAULT '[]',
+  proposed_action_json TEXT,
+  tool_calls_json TEXT NOT NULL DEFAULT '[]',
+  token_count INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS assistant_action_confirmations (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  action_type TEXT NOT NULL,
+  action_payload TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  executed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS assistant_usage_daily (
+  date TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  request_count INTEGER NOT NULL DEFAULT 0,
+  tokens_used INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(date, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS facility_issues (
+  id TEXT PRIMARY KEY,
+  reporter_id TEXT NOT NULL,
+  location_id TEXT,
+  facility_name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  urgency TEXT NOT NULL DEFAULT 'medium',
+  status TEXT NOT NULL DEFAULT 'open',
+  assigned_to TEXT,
+  resolution_notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

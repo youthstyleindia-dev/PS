@@ -61,7 +61,25 @@ export type Permission =
   | 'admin.system.diagnostics'
   | 'admin.demo.reset'
   // Security Audit
-  | 'security.audit.read';
+  | 'security.audit.read'
+  // Campus Feed & Moderation
+  | 'feed.posts.read'
+  | 'feed.posts.create'
+  | 'feed.posts.moderate'
+  | 'feed.comments.create'
+  // Senior Mentorship
+  | 'mentorship.directory.search'
+  | 'mentorship.request.create'
+  | 'mentorship.request.review'
+  | 'mentorship.messages.exchange'
+  // Campus Copilot & Cloud AI
+  | 'assistant.chat.access'
+  | 'assistant.actions.execute'
+  // Campus Operations & Events
+  | 'campus.events.rsvp'
+  | 'campus.communities.join'
+  | 'campus.facilities.report'
+  | 'campus.facilities.resolve';
 ```
 
 ---
@@ -115,6 +133,20 @@ export type Permission =
 | **`admin.system.diagnostics`** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | **`admin.demo.reset`** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ (Dev only) |
 | **`security.audit.read`** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **`feed.posts.read`** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`feed.posts.create`** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`feed.posts.moderate`** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **`feed.comments.create`** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`mentorship.directory.search`** | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| **`mentorship.request.create`** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`mentorship.request.review`** | ❌ (Mentor) | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **`mentorship.messages.exchange`** | ✅ (Participant) | ❌ | ❌ | ✅ (Participant) | ❌ | ❌ |
+| **`assistant.chat.access`** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`assistant.actions.execute`** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`campus.events.rsvp`** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **`campus.communities.join`** | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **`campus.facilities.report`** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`campus.facilities.resolve`** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 
 ---
 
@@ -134,3 +166,14 @@ In addition to coarse role checks, the server enforces strict **Resource Scope C
 4. **Examination Scoping**:
    - `GET /api/exams/events/:sessionId`: Proctor must be assigned to `sessionId` via `exam_session_assignments` OR be `admin`.
    - `PATCH /api/exams/events/:eventId/review`: Proctor must be assigned to the associated session. Reviewer ID is derived from `req.user.id`.
+5. **Feed & Moderation Scoping**:
+   - `PATCH /api/feed/posts/:postId` and `DELETE /api/feed/posts/:postId`: Only original post author (`author_id === req.user.id`) or `admin`.
+   - `POST /api/feed/posts/:postId/reports`: Any authenticated user can submit a report; moderation queue restricted to admins.
+6. **Senior Mentorship Scoping**:
+   - `PATCH /api/mentorship/requests/:id`: Only the assigned mentor (`mentor_user_id === req.user.id`) can accept or decline.
+   - `GET/POST /api/mentorship/conversations/:id`: Participant check strictly enforces `student_id === req.user.id || mentor_user_id === req.user.id`. Third parties receive 403 Forbidden.
+7. **Assistant Action Scoping**:
+   - `POST /api/assistant/actions/:actionId/confirm`: User confirmation token bound strictly to `req.user.id`. Third-party execution is rejected with HTTP 403.
+8. **Campus Facilities Scoping**:
+   - `GET /api/campus/facilities/issues`: Normal users see their own reported issues; wardens and admins receive campus-wide aggregate issues.
+   - `PATCH /api/campus/facilities/issues/:id`: Status transitions restricted to wardens and administrators.

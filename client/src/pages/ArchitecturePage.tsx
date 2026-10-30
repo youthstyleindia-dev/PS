@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export const ArchitecturePage: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<'REUSE_AUDIT' | 'ALGO_SANDBOX' | 'SYSTEM_SPEC'>('REUSE_AUDIT');
 
   // Interactive Dijkstra Sandbox
@@ -152,7 +156,7 @@ export const ArchitecturePage: React.FC = () => {
     }
   ];
 
-  return (
+  const pageContent = (
     <div className="space-y-8 font-body-md text-on-surface">
       {/* Editorial Header */}
       <div className="p-6 md:p-8 bg-surface border border-outline-variant shadow-sm flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -578,6 +582,68 @@ export const ArchitecturePage: React.FC = () => {
       )}
     </div>
   );
+
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full min-h-screen bg-background font-body-md text-on-surface flex flex-col">
+        {/* Top Header Navigation */}
+        <header className="sticky top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md border-b border-outline-variant shadow-sm">
+          <div className="h-16 w-full max-w-7xl mx-auto px-4 md:px-12 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span
+                onClick={() => navigate('/')}
+                className="font-headline-sm text-headline-sm tracking-tight text-primary font-bold uppercase cursor-pointer"
+              >
+                UniVerse
+              </span>
+              <span className="font-mono text-xs text-secondary uppercase px-1.5 py-0.5 border border-secondary font-bold">
+                Architecture Blueprint
+              </span>
+            </div>
+
+            <nav className="hidden md:flex items-center gap-6 font-mono text-xs">
+              <button onClick={() => navigate('/')} className="hover:text-secondary transition-colors text-on-surface-variant font-medium">
+                Platform
+              </button>
+              <button onClick={() => navigate('/how-it-works')} className="hover:text-secondary transition-colors text-on-surface-variant font-medium">
+                How It Works
+              </button>
+              <button onClick={() => navigate('/impact')} className="hover:text-secondary transition-colors text-on-surface-variant font-medium">
+                Impact
+              </button>
+              <button onClick={() => navigate('/about')} className="hover:text-secondary transition-colors text-on-surface-variant font-medium">
+                Principles
+              </button>
+              <button onClick={() => navigate('/architecture')} className="text-secondary font-bold">
+                Architecture
+              </button>
+            </nav>
+
+            <div className="flex items-center gap-3 font-mono text-xs">
+              <button
+                onClick={() => navigate('/login')}
+                className="px-3 py-1.5 border border-primary text-primary hover:bg-surface-container font-bold uppercase transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => navigate('/app')}
+                className="px-4 py-1.5 bg-primary text-on-primary font-bold uppercase hover:bg-secondary transition-all shadow-[2px_2px_0px_#003fe1]"
+              >
+                Explore Console
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="p-4 md:p-8 max-w-7xl mx-auto w-full flex-1">
+          {pageContent}
+        </main>
+      </div>
+    );
+  }
+
+  return pageContent;
 };
 
 export default ArchitecturePage;

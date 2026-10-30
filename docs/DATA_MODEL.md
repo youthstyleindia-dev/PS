@@ -77,6 +77,32 @@ erDiagram
 27. `activity_log`: Global campus activity feed (`id`, `user_id`, `module`, `action`, `details`, `timestamp`).
 28. `system_settings`: Node-level configuration parameters (`key`, `value`, `updated_at`).
 
+### Group 8: Campus Community & Feed Ecosystem
+29. `feed_posts`: Unified campus posts, announcements, questions, and opportunities (`id`, `author_id`, `title`, `content`, `category`, `tags`, `likes_count`, `comments_count`, `is_pinned`, `is_demo`, `created_at`, `updated_at`).
+30. `feed_comments`: Threaded comments on feed posts (`id`, `post_id`, `author_id`, `parent_comment_id`, `content`, `likes_count`, `is_demo`, `created_at`).
+31. `feed_reactions`: User reactions on posts (`id`, `post_id`, `user_id`, `reaction_type`, `created_at`, `UNIQUE(post_id, user_id)`).
+32. `feed_bookmarks`: Saved campus posts for authenticated users (`id`, `post_id`, `user_id`, `created_at`, `UNIQUE(post_id, user_id)`).
+33. `feed_follows`: Follow relationships between campus users (`id`, `follower_id`, `following_id`, `created_at`).
+34. `feed_reports`: Moderation reports for flagged content (`id`, `post_id`, `reporter_id`, `reason`, `details`, `status`, `created_at`).
+35. `communities`: Official campus student clubs and interest groups (`id`, `name`, `slug`, `description`, `category`, `member_count`, `avatar_url`, `created_at`).
+36. `community_memberships`: User memberships in campus communities (`id`, `community_id`, `user_id`, `role`, `joined_at`, `UNIQUE(community_id, user_id)`).
+37. `campus_events`: Campus seminars, workshops, and hackathons (`id`, `title`, `description`, `category`, `location_id`, `location_name`, `start_time`, `end_time`, `organizer_id`, `capacity`, `registered_count`, `is_demo`, `created_at`).
+38. `event_registrations`: Student RSVPs for campus events (`id`, `event_id`, `user_id`, `status`, `registered_at`, `UNIQUE(event_id, user_id)`).
+39. `campus_announcements`: Official institutional campus alerts (`id`, `title`, `content`, `urgency`, `department`, `author_id`, `is_active`, `created_at`).
+
+### Group 9: Senior Mentorship Conversations
+40. `mentorship_conversations`: Direct guidance chat channels (`id`, `request_id`, `student_id`, `mentor_user_id`, `created_at`, `updated_at`).
+41. `mentorship_messages`: End-to-end messages between mentor and student (`id`, `conversation_id`, `sender_id`, `content`, `read_at`, `created_at`).
+
+### Group 10: Campus Copilot & Cloud AI
+42. `assistant_conversations`: Conversational history with the Campus Copilot (`id`, `user_id`, `title`, `created_at`, `updated_at`).
+43. `assistant_messages`: Copilot queries and grounded replies (`id`, `conversation_id`, `sender_type`, `content`, `sources_json`, `created_at`).
+44. `assistant_action_confirmations`: Proposed two-phase mutating operations awaiting human approval (`id`, `conversation_id`, `user_id`, `action_type`, `action_payload_json`, `status`, `expires_at`, `created_at`).
+45. `assistant_usage_daily`: Quota and rate-limiting tracking per user (`id`, `user_id`, `date`, `request_count`, `tokens_used`).
+
+### Group 11: Facilities & Campus Operations
+46. `facility_issues`: Campus maintenance and repair defect tracking (`id`, `reporter_id`, `location_id`, `title`, `description`, `category`, `urgency`, `status`, `resolution_notes`, `is_demo`, `created_at`, `updated_at`).
+
 ---
 
 ## 3. SQLite WAL Configuration & Performance Tuning

@@ -46,18 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
     }
-    // Default demo fallback persona: Aarav Sharma (Student)
-    return {
-      id: 'usr_student_1',
-      name: 'Aarav Sharma',
-      email: 'aarav.sharma@campus.edu',
-      role: 'student',
-      roles: ['student'],
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
-      department: 'Computer Science & Engineering',
-      year_of_study: 4,
-      is_active: true
-    };
+    return null;
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,11 +69,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             // Token expired or invalid
             localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
             setToken(null);
+            setUser(null);
           }
         } catch {
           // Keep local state if server offline
         }
+      } else {
+        localStorage.removeItem(USER_KEY);
+        setUser(null);
       }
       setIsLoading(false);
     };
@@ -192,21 +186,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }).catch(() => {});
     }
     setToken(null);
+    setUser(null);
     localStorage.removeItem(TOKEN_KEY);
-    // Reset to student default persona
-    const defaultUser: AuthUser = {
-      id: 'usr_student_1',
-      name: 'Aarav Sharma',
-      email: 'aarav.sharma@campus.edu',
-      role: 'student',
-      roles: ['student'],
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aarav',
-      department: 'Computer Science & Engineering',
-      year_of_study: 4,
-      is_active: true
-    };
-    setUser(defaultUser);
-    localStorage.setItem(USER_KEY, JSON.stringify(defaultUser));
+    localStorage.removeItem(USER_KEY);
   };
 
   const switchRole = async (role: UserRole) => {
@@ -221,7 +203,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         token,
-        isAuthenticated: !!token || !!user,
+        isAuthenticated: !!token && !!user,
         isLoading,
         login,
         loginWithRole,

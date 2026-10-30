@@ -313,6 +313,22 @@ export const ridesService = {
     });
   },
 
+  async getDriverTrips(): Promise<{ offers: any[]; total: number }> {
+    try {
+      const res = await request<{ success: boolean; data: { offers: any[]; total: number } }>('/rides/driver/trips');
+      return res.data;
+    } catch {
+      return { offers: [], total: 0 };
+    }
+  },
+
+  async updateOfferStatus(offerId: string, status: string): Promise<any> {
+    return await request<any>(`/rides/offers/${encodeURIComponent(offerId)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+  },
+
   async getSummary(): Promise<RidesSummary> {
     try {
       return await request<RidesSummary>('/rides/summary');
@@ -329,3 +345,6 @@ export const ridesService = {
     }
   },
 };
+
+export const RideService = ridesService;
+export default ridesService;

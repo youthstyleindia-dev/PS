@@ -12,6 +12,10 @@
     "build:client": "npm --prefix client run build",
     "start": "node dist/server/index.js",
     "seed": "tsx server/src/db/seed.ts",
+    "seed:demo": "tsx server/src/db/seed_demo_campus.ts",
+    "db:seed:demo": "tsx server/src/db/seed_demo_campus.ts",
+    "db:verify": "tsx server/src/db/verify_demo.ts",
+    "db:reset:demo": "tsx server/src/db/seed_demo_campus.ts && tsx server/src/db/verify_demo.ts",
     "seed:placements": "tsx server/src/db/import_placement_dataset.ts && tsx server/src/db/populate_dataset_activities.ts",
     "test": "vitest run"
   },
@@ -26,6 +30,7 @@
   "author": "UniVerse Team",
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "^2.32.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",

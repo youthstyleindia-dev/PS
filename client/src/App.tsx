@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Header } from './components/Header';
+import { CampusCopilotWidget } from './components/CampusCopilotWidget';
 import { Dashboard } from './pages/Dashboard';
 import { AcademicHub } from './pages/AcademicHub';
 import { RidesPage } from './pages/RidesPage';
@@ -17,13 +18,21 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { AboutPrinciplesPage } from './pages/AboutPrinciplesPage';
 import { ImpactPage } from './pages/ImpactPage';
+import { CampusFeedPage } from './pages/CampusFeedPage';
+import { MentorDirectoryPage } from './pages/MentorDirectoryPage';
+import { CampusCopilotPage } from './pages/CampusCopilotPage';
+import { EventsPage } from './pages/EventsPage';
+import { FacilityIssuesPage } from './pages/FacilityIssuesPage';
+import { DriverTripsPage } from './pages/DriverTripsPage';
 import { RoleGate } from './auth/RoleGate';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const isStandalone = location.pathname === '/' ||
     location.pathname.startsWith('/login') ||
-    ['/onboarding', '/how-it-works', '/about', '/impact'].includes(location.pathname);
+    ['/onboarding', '/how-it-works', '/about', '/impact'].includes(location.pathname) ||
+    (location.pathname === '/architecture' && !isAuthenticated);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if (isStandalone) {
@@ -60,6 +69,9 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </main>
       </div>
+
+      {/* Persistent Campus Copilot Floating Widget */}
+      <CampusCopilotWidget />
     </div>
   );
 };
@@ -72,14 +84,22 @@ export function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/app" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><Dashboard /></RoleGate>} />
+            <Route path="/feed" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><CampusFeedPage /></RoleGate>} />
+            <Route path="/mentors" element={<RoleGate allowedRoles={['student', 'ta_faculty', 'admin']}><MentorDirectoryPage /></RoleGate>} />
+            <Route path="/assistant" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><CampusCopilotPage /></RoleGate>} />
+            <Route path="/events" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><EventsPage /></RoleGate>} />
+            <Route path="/campus" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><EventsPage /></RoleGate>} />
             <Route path="/academic" element={<RoleGate allowedRoles={['student', 'ta_faculty', 'admin']}><AcademicHub /></RoleGate>} />
             <Route path="/hub" element={<RoleGate allowedRoles={['student', 'ta_faculty', 'admin']}><AcademicHub /></RoleGate>} />
+            <Route path="/facilities" element={<RoleGate allowedRoles={['warden', 'admin', 'student', 'ta_faculty']}><FacilityIssuesPage /></RoleGate>} />
+            <Route path="/driver/trips" element={<RoleGate allowedRoles={['driver', 'admin']}><DriverTripsPage /></RoleGate>} />
             <Route path="/rides" element={<RoleGate allowedRoles={['student', 'driver', 'ta_faculty', 'warden', 'admin']}><RidesPage /></RoleGate>} />
             <Route path="/sustainability" element={<RoleGate allowedRoles={['student', 'driver', 'ta_faculty', 'warden', 'admin']}><SustainabilityPage /></RoleGate>} />
             <Route path="/wellbeing" element={<RoleGate allowedRoles={['student']}><WellbeingPage /></RoleGate>} />
             <Route path="/exam-monitor" element={<RoleGate allowedRoles={['proctor', 'admin']}><ExamMonitorPage /></RoleGate>} />
             <Route path="/exams" element={<RoleGate allowedRoles={['proctor', 'admin']}><ExamMonitorPage /></RoleGate>} />
-            <Route path="/architecture" element={<RoleGate allowedRoles={['student', 'ta_faculty', 'proctor', 'warden', 'admin']}><ArchitecturePage /></RoleGate>} />
+            {/* Public Architecture Page - no RoleGate */}
+            <Route path="/architecture" element={<ArchitecturePage />} />
             <Route path="/settings" element={<RoleGate allowedRoles={['student', 'driver', 'proctor', 'ta_faculty', 'warden', 'admin']}><SettingsPage /></RoleGate>} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/login/:roleKey" element={<LoginPage />} />

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# UniVerse Campus OS — Deterministic Demo Data Generator
+# ==============================================================================
+set -euo pipefail
+
+echo "========================================================"
+echo " UniVerse Campus OS — Seeding Deterministic Demo Records"
+echo "========================================================"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cd "${ROOT_DIR}"
+npx tsx server/src/db/seed.ts
+
+echo "✨ Seed complete: 30 students, 10 mentors (>=4 ML), 40 feed posts, 12 events, 10 rides, 20 resources."

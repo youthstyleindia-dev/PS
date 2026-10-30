@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# UniVerse Campus OS — Safe Demo Reset Utility
+# ==============================================================================
+set -euo pipefail
+
+ENV="${NODE_ENV:-development}"
+
+echo "========================================================"
+echo " UniVerse Campus OS — Safe Demo Database Reset"
+echo " Environment: ${ENV}"
+echo "========================================================"
+
+if [[ "${ENV}" != "development" && "${ENV}" != "test" ]]; then
+  echo "❌ CRITICAL SAFETY ERROR: scripts/reset-demo refuses to run in environment '${ENV}'!"
+  echo "   Demo resets are strictly restricted to 'development' or 'test'."
+  exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+cd "${ROOT_DIR}"
+echo "🔄 Resetting and re-seeding demo database fixtures..."
+npx tsx server/src/db/seed.ts
+
+echo "✅ Demo reset successfully completed."

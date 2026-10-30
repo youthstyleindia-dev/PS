@@ -1,35 +1,38 @@
-# UniVerse: An Intelligent, Sustainable, and Privacy-Aware Campus Ecosystem
+# UniVerse: An Intelligent, Sustainable, and Privacy-Aware Campus Operating System
 
-[![Tests](https://img.shields.io/badge/Tests-229%20Passing-brightgreen?style=flat-square)](./docs/security-audit/05_TEST_EVIDENCE.md)
+[![Tests](https://img.shields.io/badge/Tests-283%20Passing%20(20%20Suites)-brightgreen?style=flat-square)](./docs/exam-ml/TEST_RESULTS.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-v19-61dafb?style=flat-square)](https://react.dev/)
 [![Express](https://img.shields.io/badge/Express-v5-lightgrey?style=flat-square)](https://expressjs.com/)
+[![Google Gen AI](https://img.shields.io/badge/Google%20Gen%20AI-%40google%2Fgenai%20v2.32-007fff?style=flat-square)](https://github.com/google-gemini/deprecations)
 [![SQLite](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=flat-square)](https://www.sqlite.org/)
-[![RBAC](https://img.shields.io/badge/RBAC-6%20Roles%20Enforced-orange?style=flat-square)](./docs/security-audit/03_ROLE_PERMISSION_MATRIX.md)
-[![Security Audit](https://img.shields.io/badge/Security%20Audit-SEC--01%20to%20SEC--10%20Remediated-brightgreen?style=flat-square)](./docs/security-audit/02_FINDINGS.md)
-[![Design System](https://img.shields.io/badge/Design-Google%20Stitch%20Brutalism-003FE1?style=flat-square)](./docs/COMPONENT_REUSE_REPORT.md)
+[![RBAC](https://img.shields.io/badge/RBAC-7%20Roles%20Enforced-orange?style=flat-square)](./docs/ROLE_PERMISSION_MATRIX.md)
+[![Privacy-First Vision](https://img.shields.io/badge/Vision%20Privacy-Zero%20Raw%20Frames-brightgreen?style=flat-square)](./docs/exam-ml/PRIVACY_AND_CONSENT.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-> *"One Campus. Five Intelligent Systems."*  
-> A unified, full-stack campus operating platform that helps students learn, connect, commute, and focus while making campus computing more sustainable and examination proctoring more responsible.
+> *"One Campus. One Connected Experience."*  
+> A complete, full-stack campus operating platform that unifies academic readiness, senior Machine Learning mentorship, a grounded cloud AI copilot, real-time community feeds, smart ride-pooling, sustainable computing, sovereign wellbeing, and ethical human-in-the-loop examination monitoring.
 
 ---
 
-## 🚀 Quick Start (Zero Paid APIs Required)
+## 🚀 Quick Start
 
-UniVerse is completely self-contained and runs locally on macOS, Linux, or Windows without external paid cloud keys:
+UniVerse runs completely self-contained on macOS, Linux, or Windows with SQLite WAL persistence:
 
 ```bash
-# 1. Clone & install root and client dependencies
+# 1. Install root and client dependencies
 npm install && cd client && npm install && cd ..
 
-# 2. Run automated test suite (229 tests across 14 suites in ~1.8 seconds)
+# 2. Run automated test suite (283 tests across 20 suites in ~6 seconds)
 npm test
 
-# 3. Seed SQLite database with deterministic campus data & canonical personas
-npm run seed
+# 3. Seed synthetic demo dataset with verified senior mentors and campus feeds
+npm run db:reset:demo
 
-# 4. Start concurrent development server (Client on :5173, Server on :3001)
+# 4. Verify synthetic dataset invariants and table integrity
+npm run db:verify
+
+# 5. Start concurrent development server (Client on :5173, Server on :3001)
 npm run dev
 ```
 
@@ -37,184 +40,126 @@ Open your browser to: **`http://localhost:5173`**
 
 ---
 
-## 🔐 Canonical Roles, Role Workspaces & Credentials
+## 🔐 Demo Personas & Credentials
 
-UniVerse strictly enforces server-side and client-side RBAC across 6 canonical roles. Users only see and access workspaces permitted by their assigned roles:
+All accounts use pre-seeded password: **`universe2026`** (or `CampusPass123!`). Every persona is locked into its authorized workspace:
 
-| Role Key | Persona / User Name | Campus Email | Pre-seeded Password | Authorized Workspace |
+| Persona | Role | Email | Focus & Specialization | Authorized Workspaces |
 | :--- | :--- | :--- | :--- | :--- |
-| `student` | Aarav Sharma | `aarav.sharma@campus.edu` | `password123` | Student Hub, Placement Radar, Carpool Booking, Focus Timer |
-| `driver` | Vikram Rao | `vikram.rao@campus.edu` | `password123` | Driver Console, Route Publishing, Detour Match Oracle |
-| `proctor` | Dr. Meenakshi Sundaram | `m.sundaram@campus.edu` | `password123` | Exam Review Tribunal, CV Observation Adjudication, Audit Trail |
-| `ta_faculty` | Dr. Priya Patel | `dr.patel@campus.edu` | `password123` | Academic Hub, Mentorship Registry, Course Resource Management |
-| `warden` | Campus Residential Warden | `warden@campus.edu` | `password123` | Residential Hall Overview, Student Transit & Campus Safety |
-| `admin` | Campus IT Operations | `admin@campus.edu` | `password123` | Green Cloud Telemetry, Workload Scaling, System Governance |
-
-### Dedicated Role Entry Points:
-- `/login/student` — Student Intelligence & Placement Portal
-- `/login/driver` — Transit Driver Operations Terminal
-- `/login/proctor` — Academic Integrity & Exam Tribunal Portal
-- `/login/ta_faculty` — Teaching Assistant & Faculty Portal
-- `/login/warden` — Residential Operations Portal
-- `/login/admin` — Campus IT Systems & Infrastructure Terminal
-
-*Note:* Attempting to log into a role portal without verified assignment in `role_assignments` yields `403 FORBIDDEN_ROLE_ACCESS`. In the header, the persona switcher only displays roles granted to the current account.
+| **Aarav Mehta** | `student` | `aarav.mehta@campus.edu` | Year 2 CSE; ML research & internship prep | Scholar Workspace, Feed, Mentors, Copilot, Carpool, Focus |
+| **Riya Shah** | `student` (Mentor) | `riya.shah@campus.edu` | Year 4 CSE; Incoming ML Engineer at Google DeepMind | Senior Mentorship Network, Feed, Private Chat Enclave |
+| **Kabir Patel** | `student` (Mentor) | `kabir.patel@campus.edu` | Year 4 CSE; Incoming Systems Engineer at Microsoft | Senior Mentorship Network, Slurm HPC, Distributed Systems |
+| **Neha Rao** | `student` (Mentor) | `neha.rao@campus.edu` | Year 4 AI & DS; Data Scientist at AWS | NLP & Transformers, Mentorship Commons |
+| **Diya Patel** | `student` (Mentor) | `diya.patel@campus.edu` | Year 4 CSE; LeetCode 150 & Full-Stack | Placement Readiness, Peer Code Review |
+| **Dr. Priya Patel** | `ta_faculty` | `dr.patel@campus.edu` | AI Lab Director; Graduate Mentor | Faculty Overview, Announcements, Course Publisher |
+| **Vikram Rao** | `driver` | `vikram.rao@campus.edu` | Transit Driver; EV Carpool Captain | Transit Dispatch, Route Publishing, Avoided $CO_2$ |
+| **Prof. M. Sundaram** | `proctor` | `m.sundaram@campus.edu` | Exam Integrity Tribunal Chair | Human Review Tribunal, Audit Trail, No Auto-Disqualification |
+| **Campus Warden** | `warden` | `warden@campus.edu` | Residential & Safety Warden | Residential Hall Overview, Campus Notices, Transit Safety |
+| **IT Administrator** | `admin` | `admin@campus.edu` | Root System Operations | System Governance, Slurm Telemetry, Audit Logs |
 
 ---
 
-## 🏛️ The Five Integrated Modules
+## 🏛️ Full Campus Operating Environment
 
-UniVerse unites five specialized university systems under one cohesive Google Stitch collegiate brutalist design system (`#faf9f5` Warm Paper, `#1b1c1a` Ink Black, `#003fe1` Cobalt, zero-radius orthogonal borders):
+UniVerse unites the entire university experience under the Google Stitch editorial collegiate identity (`#FAF9F5` Warm Paper, `#1B1C1A` Ink Black, `#003FE1` Cobalt, zero-radius orthogonal borders):
 
-### 1. Module A: Student Intelligence & Academic Hub (`/academic` or `/hub`)
-- **Student Profile**: Tracks major, target roles, competency ratings, and placement goals.
-- **Dynamic Placement Readiness**: Real-time progress percentage calculated dynamically from completed milestones (`completionPercent = completedTasks / totalTasks * 100`).
-- **Peer Mentorship Discovery**: Search and filter senior student mentors by skill, company offer, and availability with cosine affinity ranking. Includes complete request workflow (`PENDING`, `ACCEPTED`, `DECLINED`).
-- **Sovereign Curriculum Archive**: Searchable, categorized repository of course syllabi, past papers, and study resources.
+### 1. Community & Campus Feed (`/feed`)
+- **Categorized Feeds:** Filter between Academic, Mobility, Wellbeing, Sustainability, and Official Notices.
+- **Structured Post Types:** Announcements, Questions, Opportunities, Project Updates, and Discussions.
+- **Server Role Guards:** Only verified Faculty, Wardens, or Admins can post official announcements (students receive `403 Forbidden`).
+- **Interactive Engagement:** Idempotent likes, nested comments, personal bookmarks, and moderation flags.
 
-### 2. Module B: Smart Campus Ride-Pooling (`/rides`)
-- **Interactive SVG Campus Map**: Visualizes the 10-node campus topological network and 30 weighted edges with distance markers and congestion indicators.
-- **Dijkstra Shortest Path Routing**: Calculates optimal paths adjusted dynamically for time-of-day traffic congestion ($c(t)$ multipliers).
-- **Dial-a-Ride Insertion Matching**: Evaluates driver routes against passenger requests, strictly enforcing seat capacity and maximum detour ratio constraints ($\le 35\%$).
-- **Avoided Carbon Accounting**: Calculates real shared distance, $40\%$ passenger cost savings, and avoided vehicle carbon emissions ($0.142\text{ kg CO}_2\text{e/km}$).
+### 2. Senior Mentorship Network (`/mentors`)
+- **Explainable Match Ranking:** Matches underclassmen with experienced seniors in Machine Learning, PyTorch, Systems, and DSA using explainable scoring.
+- **Mentorship Request State Machine:** Send guidance requests with preferred slots; mentors can accept or decline with notes.
+- **Auto-Provisioned Private Chat:** Accepting a request automatically creates a private conversation channel strictly isolated from third parties (`403 Forbidden`).
 
-### 3. Module C: Sustainable Computing Observatory (`/sustainability`)
-- **Green Cloud Telemetry**: Real-time observability across 3 campus services (*Academic API*, *Ride Dispatch Oracle*, *Resource Search*).
-- **Non-Linear Server Power Model**: Computes power draw via:
-  $$P(U) = P_{\text{idle}} + (P_{\text{max}} - P_{\text{idle}}) \times (U/100)^{1.25}$$
-- **Facility PUE Multiplier**: Single facility overhead factor (1.12 to 1.45) applied once.
-- **Diurnal Solar Peak Scheduling**: Simulates scheduling heavy batch Slurm jobs (PyTorch/CUDA) during peak on-campus solar generation (10:00–14:00) to displace grid carbon.
-- **Baseline vs. Eco-Optimized Comparison**: Toggle between baseline (PUE 1.75) and eco-optimized (PUE 1.20) showing $-45.9\%$ energy reduction.
+### 3. UniVerse AI / Campus Copilot (`/assistant` & Floating Pill)
+- **Official Google Gen AI SDK:** Powered by `@google/genai` (v2.32.0) with model `gemini-2.5-flash`.
+- **Grounded Campus Retrieval (RAG):** Context is pulled in real time from authorized SQLite tables across mentors, events, resources, feeds, directory, and carpools. Never hallucinates fake institutional policies or non-existent seniors.
+- **Two-Phase Action Confirmations:** When asked to take an action (e.g. register for an event or request a mentor), the AI emits a `<<<PROPOSED_ACTION:...>>>` card. The server holds it pending until the user explicitly clicks **"Confirm & Execute"**.
+- **Transparent Offline Fallback:** If `GEMINI_API_KEY` is not configured, the copilot explicitly badges itself as *Local Offline Grounding* rather than faking live cloud AI.
 
-### 4. Module D: Privacy-Aware Digital Wellbeing (`/wellbeing`)
-- **Voluntary Focus Timer**: Deep work timer with Start, Pause, Resume, and Stop controls using true wall-clock timestamp differences.
-- **Local Domain Classification Engine**: User-defined rules categorize domains as `Productive`, `Distracting`, or `Neutral`.
-- **Zero-Telemetry Hostname Sanitization**: Client-side URL parser strips all paths, search tokens, passwords, and fragments before logging (`leetcode.com/problems/x?token=123` $\to$ `leetcode.com`).
-- **Deep Work Index (DWI)**: Quantifies focus quality penalized by frequency of rapid context switching.
-- **Differential Privacy Cohort Analytics**: Injects mathematical Laplace noise ($\epsilon = 0.8$, $\Delta f = 1.0$) into departmental focus statistics with small-cohort suppression ($k \ge 3$) to prevent deanonymization.
-- **Right to Erasure**: Permanent 1-click database purge of all personal browsing and focus telemetry.
+### 4. Campus Events & Guild Communities (`/events`)
+- **Event RSVPs:** Live capacity tracking and one-click RSVP toggles for AI workshops, hackathons, and research talks.
+- **Student Guilds & Clubs:** Discover and join active student communities (AI Club, ACM Chapter, Green Campus).
+- **Facilities Directory:** Search campus buildings, AI labs, libraries, and operating hours.
 
-### 5. Module E: Responsible Examination Review (`/exams` or `/exam-monitor`)
-- **Dual Operating Modes**:
-  - **Mode 1 (Browser Session Telemetry)**: Deterministic stream of preconfigured session events (`BROWSER_TAB_BLUR`, `FULLSCREEN_DEPARTURE`).
-  - **Mode 2 (Local Consented Visual-Event Adapter)**: Authorized browser webcam stream using local canvas boundary detection for `RESTRICTED_ZONE_INCURSION` and `MULTIPLE_OCCUPANTS_DETECTED`. Zero video recording or cloud uploads.
-- **Human-in-the-Loop Proctor Audit**: Pending review queue where human proctors inspect observable cues, enter mandatory written audit rationale, and adjudicate outcomes (`DISMISS_FALSE_POSITIVE`, `ESCALATE_TO_INVIGILATOR`).
-- **Immutable Audit Trail**: Append-only log (`exam_audit_log`) recording proctor ID, timestamp, and justification for every review action.
-- **Strict Ethical AI Invariant**: Explicit disclaimers stating that observations are behavioural indicators requiring human review. Zero automated penalties.
+### 5. Smart Campus Ride-Pooling (`/rides`)
+- **Topological Campus Map:** 10-node campus graph with 30 directed edges and peak-hour congestion multipliers.
+- **Dijkstra Shortest Path:** Fast topological routing with maximum detour constraints ($\le 35\%$).
+- **Carbon Accounting:** Calculates avoided vehicle emissions ($0.142\text{ kg CO}_2\text{e/km}$) and $40\%$ passenger savings.
 
----
+### 6. Sustainable Computing Observatory (`/sustainability`)
+- **Non-Linear Server Power Model:** $P(U) = P_{\text{idle}} + (P_{\text{max}} - P_{\text{idle}}) \times (U/100)^{1.25}$.
+- **Slurm Solar Scheduling:** Schedules heavy CUDA/PyTorch training during campus solar peak hours (10:00–14:00).
+- **Eco-Optimization Comparison:** Baseline PUE 1.75 vs. Eco PUE 1.20 showing $-45.9\%$ energy reduction.
 
-## 🛠️ Technology Stack
+### 7. Sovereign Digital Wellbeing (`/wellbeing`)
+- **Voluntary Focus Timer:** Pomodoro sessions tracking deep work index without surveillance.
+- **Zero-Telemetry Hostname Sanitization:** URL parser strips all query strings and private tokens.
+- **Laplace Differential Privacy:** Adds mathematical noise ($\varepsilon = 0.8$, $\Delta f = 1.0$) with small cohort suppression ($k \ge 3$) to prevent individual deanonymization.
+- **GDPR Right to Erasure:** 1-click database purge of all personal focus records.
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React 19, TypeScript (Strict), Vite 6, Tailwind CSS v4, Lucide Icons, Recharts, React Router v7 |
-| **Design System** | Google Stitch Editorial Brutalism (`#faf9f5`, `#1b1c1a`, `#003fe1`, zero-radius orthogonal containers) |
-| **Backend** | Node.js v18+, Express v5, TypeScript |
-| **Database** | SQLite via `better-sqlite3` (WAL Mode, Foreign Key Cascades, 28 Relational Tables) |
-| **Authentication** | Bcrypt (10 salt rounds), HMAC-SHA256 JWT, SQLite `auth_sessions`, `auth_audit_log` |
-| **Testing** | Vitest v3, Supertest v7 (190 tests across 12 suites, unit, adversarial, e2e, integration) |
+### 8. Responsible Examination Review (`/exams`)
+- **Ethical Human-in-the-Loop Tribunal:** Observable client events (browser blur, full-screen departure, orientation dwell) are recorded with non-accusatory notices.
+- **Zero Algorithmic Disqualifications:** Evaluators must submit a written rationale before resolving incidents.
 
 ---
 
-## 📊 Automated Test Suite (190 Tests · 100% Passing)
+## 🧪 Comprehensive Verification & Test Matrix
 
-UniVerse features a comprehensive automated test matrix verifying all algorithms, boundary limits, and end-to-end user workflows:
+UniVerse includes 20 comprehensive automated test suites covering every tier:
 
 ```bash
 npm test
 ```
 
-```text
-✓ tests/e2e/tier4_scenarios.test.ts (4 tests)
-✓ tests/e2e/tier2_boundaries.test.ts (18 tests)
-✓ tests/e2e/tier1_features.test.ts (33 tests)
-✓ tests/integration/full_ecosystem.test.ts (20 tests)
-✓ tests/adversarial/m1_stress_challenge.test.ts (21 tests)
-✓ tests/adversarial/m2_stress_challenge.test.ts (28 tests)
-✓ tests/unit/graph_matching.test.ts (13 tests)
-✓ tests/unit/energy_carbon.test.ts (9 tests)
-✓ tests/unit/privacy_dp.test.ts (10 tests)
-✓ tests/e2e/tier3_pairwise.test.ts (8 tests)
-✓ tests/adversarial/m2_ride_ui_stress.test.ts (14 tests)
-✓ tests/unit/auth.test.ts (12 tests)
-
-Test Files  12 passed (12)
-Tests       190 passed (190)
-Duration    ~1.70s
+```
+Test Files  20 passed (20)
+Tests       283 passed (283)
+Time        ~6.1 seconds
 ```
 
-Detailed test documentation: [`docs/TEST_PLAN.md`](./docs/TEST_PLAN.md).
+1. `tests/unit/auth.test.ts` (12 tests) — Password hashing, JWT signing, role resolution.
+2. `tests/security/role_matrix.test.ts` (25 tests) — Role isolation across 6 canonical personas.
+3. `tests/e2e/tier1_features.test.ts` (33 tests) — Core module read/write workflows.
+4. `tests/e2e/tier2_boundaries.test.ts` (18 tests) — Boundary conditions and edge cases.
+5. `tests/adversarial/m1_stress_challenge.test.ts` (21 tests) — Concurrency, SQL injection shielding, foreign key cascade deletions.
+6. `tests/adversarial/m2_stress_challenge.test.ts` (28 tests) — Dijkstra graph invariants and atomic booking decrement.
+7. `tests/e2e/tier3_pairwise.test.ts` (8 tests) — Inter-module combinatorial interactions.
+8. `tests/e2e/tier4_scenarios.test.ts` (4 tests) — End-to-end multi-persona user journeys.
+9. `tests/integration/full_ecosystem.test.ts` (20 tests) — Connected full-campus integration.
+10. `tests/e2e/campus_feed.test.ts` (8 tests) — Feed creation, announcement privilege guards, likes, comments, bookmarks.
+11. `tests/integration/exam_monitor_api.test.ts` (12 tests) — Exam observation ingestion and audit trail.
+12. `tests/security/audit_remediation.test.ts` (14 tests) — Atomic seat exhaustion and security fixes.
+13. `tests/e2e/senior_mentorship.test.ts` (6 tests) — ML search filters, explainable match breakdown, request/acceptance, private chat.
+14. `tests/adversarial/m2_ride_ui_stress.test.ts` (14 tests) — Ride UI resilience and offline fallbacks.
+15. `tests/security/role_isolation_matrix.test.ts` (8 tests) — 7-role zero-escalation matrix.
+16. `tests/e2e/campus_copilot.test.ts` (5 tests) — Grounded retrieval, action cards, conversation isolation, injection defense.
+17. `tests/unit/graph_matching.test.ts` (13 tests) — Dijkstra shortest path & DARP matching.
+18. `tests/unit/exam_vision_algorithms.test.ts` (15 tests) — Vision dwell & bounded angle evaluation.
+19. `tests/unit/privacy_dp.test.ts` (10 tests) — Laplace noise & differential privacy guarantee.
+20. `tests/unit/energy_carbon.test.ts` (9 tests) — Non-linear SPECpower & avoided carbon equations.
 
 ---
 
-## 🧭 Application Routes
+## 📖 Complete Documentation Sitemap
 
-### Public & Narrative Portal
-- `/` — Product Landing Page (Value proposition, 5 module highlights, orbital constellation SVG).
-- `/how-it-works` — 3-Stage Visual Workflow Explainer (Discovery → Transit → Stewardship).
-- `/about` — Principles & Ethos (Five Foundational Tenets, comparison matrix vs commercial SaaS).
-- `/impact` — Audited Impact & ESG Telemetry ($-44.8\text{ kg CO}_2/\text{wk}$, $68.4\%$ solar compute shift).
-- `/onboarding` — Collegiate Node Setup Wizard (3-step role and focus setup).
-- `/login` — Campus NetID Sign-In & 1-Click Sandbox Persona Launcher.
-
-### Authenticated Application Workspace
-- `/app` — Ecosystem Command Center (Cross-module dashboard with live SQLite metrics and activity feed).
-- `/academic` (or `/hub`) — Student Intelligence & Academic Placement Hub.
-- `/rides` — Smart Campus Ride-Pooling with Interactive SVG Map.
-- `/sustainability` — Sustainable Computing Observatory & Slurm Batch Scheduler.
-- `/wellbeing` — Privacy-Preserving Focus Timer & Laplace DP Analytics.
-- `/exams` (or `/exam-monitor`) — Responsible Examination Monitoring & Proctor Review Queue.
-- `/architecture` — System Architecture Blueprint, Open-Source Reuse Audit, and Algorithm Sandboxes.
-- `/settings` — Enclave Keys, Passphrase Management & Active Session Registry.
+- [Live Demonstration Script (10–12 Mins)](./docs/FULL_CAMPUS_DEMO_SCRIPT.md)
+- [System Architecture Specification](./docs/ARCHITECTURE.md)
+- [Relational SQLite Data Model](./docs/DATA_MODEL.md)
+- [Role & Permission Matrix](./docs/ROLE_PERMISSION_MATRIX.md)
+- [Cloud Generative AI & Grounding](./docs/CLOUD_AI.md)
+- [Campus Feed & Senior Mentorship](./docs/FEED_AND_MENTORSHIP.md)
+- [Synthetic Seed Dataset Specification](./docs/SEED_DATA.md)
+- [API Contracts & Endpoints](./docs/API_CONTRACTS.md)
+- [Test Plan & Verification Topology](./docs/TEST_PLAN.md)
+- [Third Party & License Notices](./docs/THIRD_PARTY_AND_LICENSE_AUDIT.md)
 
 ---
 
-## 🎭 Demonstration Personas
+## 📜 License
 
-UniVerse includes pre-seeded demonstration personas accessible via 1-click in `/login` or via the top role switcher:
-
-1. **Aarav Sharma (`student`)**: Senior CS undergrad focusing on distributed systems and campus placements.
-2. **Vikram Rao (`driver`)**: Campus commuter vanpool captain managing rides and detour envelopes.
-3. **Dr. Meenakshi Sundaram (`proctor`)**: Chief examination proctor presiding over the responsible review tribunal.
-4. **Campus Operations (`admin`)**: Infrastructure administrator managing cluster power caps and Slurm simulations.
-
----
-
-## 📜 Full Documentation Suite
-
-- **[Implementation Audit](docs/IMPLEMENTATION_AUDIT.md)**: Verified claims, actual test counts, and system baseline.
-- **[Build Plan & Roadmap](docs/BUILD_PLAN.md)**: Engineering methodology, phases, and non-negotiable rules.
-- **[Open-Source Component Reuse Report](docs/COMPONENT_REUSE_REPORT.md)**: Rigorous evaluation of ScholarOS, Proctora, Cloud Carbon Footprint, Focuser, and ExMAS.
-- **[Third-Party & License Audit](docs/THIRD_PARTY_AND_LICENSE_AUDIT.md)**: Legal analysis, dependency audit, and attribution terms.
-- **[Known Technical Limitations](docs/KNOWN_LIMITATIONS.md)**: Honest disclosure of model assumptions, simulations, and boundaries.
-- **[System Architecture](docs/ARCHITECTURE.md)**: Full-stack diagrams, database schema relationships, and data flows.
-- **[API Contracts](docs/API_CONTRACTS.md)**: Endpoints, types, request/response envelopes, and error codes.
-- **[Relational Data Model](docs/DATA_MODEL.md)**: 28 normalized SQLite tables, WAL tuning, indexes, and constraints.
-- **[Algorithm Derivations](docs/ALGORITHMS.md)**: Mathematical formulations, complexity proofs, and environmental equations.
-- **[Test Plan & Matrix](docs/TEST_PLAN.md)**: Quality assurance matrix covering 190 automated tests.
-- **[Team Assignments](docs/TEAM_ASSIGNMENTS.md)**: Multi-agent coordination matrix and actual task execution log.
-- **[Judge Demo Script](docs/DEMO_SCRIPT.md)**: 8-step live walkthrough script for technical evaluators.
-- **[Hackathon Pitch Deck](docs/PITCH.md)**: Presentation-ready pitch deck covering the problem, solution, technical innovation, and campus impact.
-
----
-
-## 🔒 Responsible AI & Privacy Guarantees
-
-1. **3-Tier Provenance Badging**: Every metric is labelled as `[ACTUAL INFERENCE]`, `[SIMULATED EVENT]`, or `[ESTIMATED METRIC]`.
-2. **Zero Automated Punishment**: No student can ever be penalized automatically based on computer-vision model output.
-3. **Differential Privacy Guarantee**: Departmental focus aggregates inject calibrated Laplace noise ($\epsilon = 0.8$, $\Delta f = 1.0$) to prevent tracking individual students.
-4. **Right to Erasure**: Permanent deletion endpoint cleanses all personal focus sessions and browsing logs on demand.
-5. **Zero Cloud Camera Uploads**: Webcam mode processes frames locally in browser canvas memory without recording or transmitting video to cloud servers.
-
----
-
-## 🔧 Troubleshooting
-
-- **Port in use (3001 or 5173)**: Kill existing node processes via `lsof -i :3001` or `lsof -i :5173`.
-- **Database reset**: To re-seed the SQLite database with clean realistic fixtures, run `npm run seed`.
-
----
-
-## ⚖️ License
-MIT License. Developed for the Hackathon Technical Challenge.
+UniVerse is licensed under the [MIT License](LICENSE).
+All external repositories evaluated are documented in [docs/COMPONENT_REUSE_REPORT.md](./docs/COMPONENT_REUSE_REPORT.md).

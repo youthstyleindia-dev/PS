@@ -541,3 +541,254 @@ CREATE INDEX IF NOT EXISTS idx_observation_events_status ON observation_events(r
 CREATE INDEX IF NOT EXISTS idx_exam_audit_event ON exam_audit_log(event_id);
 CREATE INDEX IF NOT EXISTS idx_activity_log_user ON activity_log(user_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
+
+-- ------------------------------------------------------------------------------
+-- 9. CAMPUS FEED & COMMUNITY SYSTEM
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS feed_posts (
+  id TEXT PRIMARY KEY,
+  author_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  campus_id TEXT NOT NULL DEFAULT 'main_campus',
+  post_type TEXT NOT NULL CHECK(post_type IN ('discussion', 'question', 'project_update', 'opportunity', 'event', 'announcement', 'resource_share', 'ride_share', 'poll')),
+  title TEXT,
+  body TEXT NOT NULL,
+  tags TEXT NOT NULL DEFAULT '[]',
+  visibility TEXT NOT NULL DEFAULT 'campus' CHECK(visibility IN ('campus', 'department', 'followers', 'private')),
+  attachment_metadata TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'published' CHECK(status IN ('published', 'hidden', 'removed', 'pending_review')),
+  likes_count INTEGER NOT NULL DEFAULT 0,
+  comments_count INTEGER NOT NULL DEFAULT 0,
+  bookmarks_count INTEGER NOT NULL DEFAULT 0,
+  is_demo INTEGER NOT NULL DEFAULT 0 CHECK(is_demo IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS feed_comments (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+  author_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  parent_id TEXT REFERENCES feed_comments(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  is_demo INTEGER NOT NULL DEFAULT 0 CHECK(is_demo IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS feed_reactions (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reaction_type TEXT NOT NULL DEFAULT 'like' CHECK(reaction_type IN ('like', 'celebrate', 'insightful', 'curious')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, post_id, reaction_type)
+);
+
+CREATE TABLE IF NOT EXISTS feed_bookmarks (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, post_id)
+);
+
+CREATE TABLE IF NOT EXISTS feed_follows (
+  id TEXT PRIMARY KEY,
+  follower_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  target_type TEXT NOT NULL CHECK(target_type IN ('user', 'community')),
+  target_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(follower_id, target_type, target_id)
+);
+
+CREATE TABLE IF NOT EXISTS feed_reports (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL REFERENCES feed_posts(id) ON DELETE CASCADE,
+  reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'reviewed', 'dismissed', 'action_taken')),
+  reviewed_by TEXT REFERENCES users(id),
+  reviewed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------------------------------------------
+-- 10. CAMPUS CLUBS, EVENTS & SERVICES DIRECTORY
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS communities (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('AI_ML', 'Coding', 'Robotics', 'WebDev', 'Cybersecurity', 'Entrepreneurship', 'General')),
+  avatar TEXT,
+  member_count INTEGER NOT NULL DEFAULT 0,
+  is_demo INTEGER NOT NULL DEFAULT 0 CHECK(is_demo IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS community_memberships (
+  id TEXT PRIMARY KEY,
+  community_id TEXT NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('member', 'moderator', 'lead')),
+  joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(community_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS campus_events (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('Workshop', 'Seminar', 'Hackathon', 'Coding_Meet', 'Placement', 'Social')),
+  organizer_id TEXT NOT NULL REFERENCES users(id),
+  community_id TEXT REFERENCES communities(id) ON DELETE SET NULL,
+  venue TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  capacity INTEGER NOT NULL DEFAULT 50,
+  rsvp_count INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'upcoming' CHECK(status IN ('upcoming', 'in_progress', 'completed', 'cancelled')),
+  tags TEXT NOT NULL DEFAULT '[]',
+  is_demo INTEGER NOT NULL DEFAULT 0 CHECK(is_demo IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_registrations (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL REFERENCES campus_events(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'confirmed' CHECK(status IN ('confirmed', 'cancelled', 'waitlisted')),
+  registered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(event_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS campus_locations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('Academic', 'Laboratory', 'Library', 'Hostel', 'Sports', 'Dining', 'Transit', 'Administration')),
+  building TEXT NOT NULL,
+  zone TEXT NOT NULL,
+  description TEXT NOT NULL,
+  hours TEXT NOT NULL DEFAULT '08:00 - 20:00',
+  accessibility TEXT NOT NULL DEFAULT 'Wheelchair accessible, elevator access',
+  coord_x REAL NOT NULL DEFAULT 0.0,
+  coord_y REAL NOT NULL DEFAULT 0.0,
+  node_id TEXT REFERENCES campus_nodes(id),
+  is_demo INTEGER NOT NULL DEFAULT 0 CHECK(is_demo IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS campus_announcements (
+  id TEXT PRIMARY KEY,
+  author_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'campus' CHECK(scope IN ('campus', 'faculty', 'hostel', 'department')),
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK(priority IN ('normal', 'urgent', 'critical')),
+  is_demo INTEGER NOT NULL DEFAULT 0 CHECK(is_demo IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------------------------------------------
+-- 11. SENIOR MENTORSHIP WORKFLOWS & CONVERSATIONS
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS mentorship_conversations (
+  id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL REFERENCES mentorship_requests(id) ON DELETE CASCADE,
+  mentee_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mentor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'closed')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(request_id)
+);
+
+CREATE TABLE IF NOT EXISTS mentorship_messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES mentorship_conversations(id) ON DELETE CASCADE,
+  sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  is_read INTEGER NOT NULL DEFAULT 0 CHECK(is_read IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------------------------------------------
+-- 12. CLOUD GENERATIVE AI (CAMPUS COPILOT)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS assistant_conversations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT 'Campus Query',
+  model TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
+  is_demo INTEGER NOT NULL DEFAULT 0 CHECK(is_demo IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS assistant_messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+  content TEXT NOT NULL,
+  sources_json TEXT NOT NULL DEFAULT '[]',
+  proposed_action_json TEXT,
+  tool_calls_json TEXT NOT NULL DEFAULT '[]',
+  token_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS assistant_action_confirmations (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  action_type TEXT NOT NULL CHECK(action_type IN ('create_mentorship_request', 'create_feed_post', 'register_for_event', 'request_ride_seat')),
+  action_payload TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'confirmed', 'rejected', 'executed')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  executed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS assistant_usage_daily (
+  date TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  request_count INTEGER NOT NULL DEFAULT 0,
+  tokens_used INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(date, user_id)
+);
+
+-- Facility Maintenance Issues (Warden & Campus Staff Operations)
+CREATE TABLE IF NOT EXISTS facility_issues (
+  id TEXT PRIMARY KEY,
+  reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  location_id TEXT REFERENCES campus_locations(id) ON DELETE SET NULL,
+  facility_name TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('plumbing', 'electrical', 'internet_wifi', 'furniture', 'cleanliness', 'safety', 'other')),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  urgency TEXT NOT NULL DEFAULT 'medium' CHECK(urgency IN ('low', 'medium', 'high', 'emergency')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'assigned', 'in_progress', 'resolved', 'rejected')),
+  assigned_to TEXT REFERENCES users(id) ON DELETE SET NULL,
+  resolution_notes TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Performance Indexes for New Entities
+CREATE INDEX IF NOT EXISTS idx_facility_issues_reporter ON facility_issues(reporter_id);
+CREATE INDEX IF NOT EXISTS idx_facility_issues_status ON facility_issues(status);
+CREATE INDEX IF NOT EXISTS idx_facility_issues_location ON facility_issues(location_id);
+CREATE INDEX IF NOT EXISTS idx_feed_posts_author ON feed_posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_feed_posts_type ON feed_posts(post_type);
+CREATE INDEX IF NOT EXISTS idx_feed_posts_status ON feed_posts(status);
+CREATE INDEX IF NOT EXISTS idx_feed_posts_created ON feed_posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_feed_comments_post ON feed_comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_feed_reactions_post ON feed_reactions(post_id);
+CREATE INDEX IF NOT EXISTS idx_feed_bookmarks_user ON feed_bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_campus_events_time ON campus_events(start_time);
+CREATE INDEX IF NOT EXISTS idx_campus_events_category ON campus_events(category);
+CREATE INDEX IF NOT EXISTS idx_mentorship_conv_mentee ON mentorship_conversations(mentee_id);
+CREATE INDEX IF NOT EXISTS idx_mentorship_conv_mentor ON mentorship_conversations(mentor_id);
+CREATE INDEX IF NOT EXISTS idx_mentorship_messages_conv ON mentorship_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_assistant_conv_user ON assistant_conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_assistant_messages_conv ON assistant_messages(conversation_id);

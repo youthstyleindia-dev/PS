@@ -355,3 +355,71 @@ authRouter.post('/roles/revoke', requireAuth, (req: Request, res: Response): voi
     message: `Role '${roleKey}' successfully revoked from user '${userId}'.`
   });
 });
+
+/**
+ * GET /api/auth/users
+ * Administrator user directory search & management
+ */
+authRouter.get('/users', requireAuth, (req: Request, res: Response): void => {
+  if (req.user!.role !== 'admin' && !(req.user!.roles && req.user!.roles.includes('admin'))) {
+    res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Administrative clearance required to inspect user directory.'
+      }
+    });
+    return;
+  }
+
+  const { query, role, limit = '50' } = req.query as Record<string, string>;
+  const db = getDb();
+  const numLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
+
+  const conditions: string[] = [];
+  const params: any[] = [];
+
+  if (role) {
+    conditions.push('u.role = ?');
+    params.push(role);
+  }
+
+  if (query && query.trim()) {
+    conditions.push('(u.name LIKE ? OR u.email LIKE ? OR u.department LIKE ?)');
+    const wild = `%${query.trim()}%`;
+    params.push(wild, wild, wild);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const sql = `
+    SELECT u.id, u.name, u.email, u.avatar, u.role, u.department, u.year_of_study, u.is_active, u.created_at,
+           GROUP_CONCAT(ra.role_key) as assigned_roles
+    FROM users u
+    LEFT JOIN role_assignments ra ON u.id = ra.user_id AND ra.status = 'active'
+    ${whereClause}
+    GROUP BY u.id
+    ORDER BY u.created_at DESC
+    LIMIT ?
+  `;
+  params.push(numLimit);
+
+  const users = db.prepare(sql).all(...params) as any[];
+
+  res.status(200).json({
+    success: true,
+    data: {
+      users: users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        avatar: u.avatar,
+        role: u.role,
+        assignedRoles: u.assigned_roles ? Array.from(new Set(u.assigned_roles.split(','))) : [u.role],
+        department: u.department,
+        yearOfStudy: u.year_of_study,
+        isActive: Boolean(u.is_active),
+        createdAt: u.created_at
+      })),
+      total: users.length
+    }
+  });
+});

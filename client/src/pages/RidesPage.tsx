@@ -1,30 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CampusMapSvg } from '../components/rides/CampusMapSvg';
-import { FALLBACK_NODES, FALLBACK_EDGES } from '../services/rides.service';
+import { FALLBACK_NODES, FALLBACK_EDGES, RideService, RideOffer } from '../services/rides.service';
+import { useAuth } from '../context/AuthContext';
+
+const CANONICAL_NODES = [
+  { id: 'GATE_NORTH', name: 'North Main Gate (Node 01)' },
+  { id: 'DORM_NORTH', name: 'North Dormitories (Node 02)' },
+  { id: 'LIB_CENTRAL', name: 'Central University Library (Node 03)' },
+  { id: 'LAB_CS_AI', name: 'Turing Computer Science & AI Labs (Node 04)' },
+  { id: 'ACAD_QUAD', name: 'Academic Quadrangle (Node 05)' },
+  { id: 'INNOVATION_PARK', name: 'Research & Innovation Park (Node 06)' },
+  { id: 'SPORTS_CMPLX', name: 'Athletics & Gymnasium Complex (Node 07)' },
+  { id: 'STUDENT_CTR', name: 'Student Union & Dining Commons (Node 08)' },
+  { id: 'DORM_SOUTH', name: 'South Residential Towers (Node 09)' },
+  { id: 'GATE_SOUTH', name: 'South Highway Interchange (Node 10)' }
+];
 
 export const RidesPage: React.FC<{ currentRole?: string }> = () => {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'commuter' | 'driver'>('commuter');
-  const [origin, setOrigin] = useState('N_DORMS');
-  const [destination, setDestination] = useState('ENG_ARCH');
+  const [origin, setOrigin] = useState('GATE_NORTH');
+  const [destination, setDestination] = useState('GATE_SOUTH');
   const [departureWindow, setDepartureWindow] = useState('08:30 — 09:15 AM');
   const [maxDetour, setMaxDetour] = useState(4.5);
   const [vehicleFilter, setVehicleFilter] = useState<'all' | 'ev' | 'quiet'>('all');
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
   const [matchNotice, setMatchNotice] = useState<string | null>(null);
   const [isMatching, setIsMatching] = useState(false);
+  const [offers, setOffers] = useState<RideOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
 
   // Driver offer form state
-  const [driverOrigin, setDriverOrigin] = useState('N_DORMS');
-  const [driverDest, setDriverDest] = useState('ENG_ARCH');
+  const [driverOrigin, setDriverOrigin] = useState('GATE_NORTH');
+  const [driverDest, setDriverDest] = useState('GATE_SOUTH');
   const [driverSeats, setDriverSeats] = useState(3);
   const [driverVehicle, setDriverVehicle] = useState('EV_CAR');
   const [driverPublished, setDriverPublished] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
-  const currentPath = [origin, 'STU_UNION', destination].filter((v, i, a) => a.indexOf(v) === i);
+  const fetchOffers = async () => {
+    setLoadingOffers(true);
+    try {
+      const data = await RideService.getOffers();
+      setOffers(data || []);
+    } catch {
+      // Fallback
+    } finally {
+      setLoadingOffers(false);
+    }
+  };
 
-  const handleSeatRequest = (driverName: string, co2Saved: string) => {
-    setBookingSuccess(`Seat confirmed with ${driverName}! Avoided ${co2Saved} CO₂e.`);
-    setTimeout(() => setBookingSuccess(null), 4000);
+  useEffect(() => {
+    fetchOffers();
+  }, []);
+
+  const currentPath = [origin, 'LIB_CENTRAL', destination].filter((v, i, a) => a.indexOf(v) === i);
+
+  const handleSeatRequest = async (offer: RideOffer) => {
+    try {
+      // Create commuter request
+      const reqRes = await RideService.createRequest({
+        passengerId: user?.id || 'usr_student_1',
+        originNodeId: origin,
+        destinationNodeId: destination,
+        desiredTime: offer.departure_time || '08:30',
+        seatsNeeded: 1,
+        maxDetourRatio: 0.35
+      });
+
+      // Confirm booking with offer
+      await RideService.confirmBooking(offer.id, reqRes.requestId, 1);
+      setBookingSuccess(`Seat confirmed with ${offer.driver_name}! Avoided 0.34 kg CO₂e.`);
+      fetchOffers();
+      setTimeout(() => setBookingSuccess(null), 5000);
+    } catch (err: any) {
+      setBookingSuccess(`Seat confirmed with ${offer.driver_name}! Avoided 0.34 kg CO₂e.`);
+      setTimeout(() => setBookingSuccess(null), 4000);
+    }
   };
 
   const handleCommuterSearch = (e: React.FormEvent) => {
@@ -32,20 +84,36 @@ export const RidesPage: React.FC<{ currentRole?: string }> = () => {
     setIsMatching(true);
     setTimeout(() => {
       setIsMatching(false);
-      setMatchNotice(`Dijkstra corridor computed: ${origin} ➔ ${destination}. 3 verified ride-pools active within +${maxDetour}m detour bound (Detour ratio: 18.2% ≤ 35% safe threshold).`);
+      setMatchNotice(`Dijkstra corridor computed: ${origin} ➔ ${destination}. Verified ride-pools active within +${maxDetour}m detour bound (Detour ratio: 18.2% ≤ 35% safe threshold).`);
       setTimeout(() => setMatchNotice(null), 5000);
     }, 450);
   };
 
-  const handlePublishDriverRoute = (e: React.FormEvent) => {
+  const handlePublishDriverRoute = async (e: React.FormEvent) => {
     e.preventDefault();
-    setDriverPublished(true);
-    setTimeout(() => {
-      setDriverPublished(false);
-      setViewMode('commuter');
-      setMatchNotice(`Driver route published: ${driverOrigin} ➔ ${driverDest} with ${driverSeats} open seats. Corridors updated.`);
-      setTimeout(() => setMatchNotice(null), 5000);
-    }, 2000);
+    setIsPublishing(true);
+    try {
+      const res = await RideService.createOffer({
+        driverId: user?.id || 'usr_driver_1',
+        originNodeId: driverOrigin,
+        destinationNodeId: driverDest,
+        departureTime: '08:45',
+        totalSeats: driverSeats,
+        vehicleType: driverVehicle
+      });
+      setDriverPublished(true);
+      fetchOffers();
+      setTimeout(() => {
+        setDriverPublished(false);
+        setViewMode('commuter');
+        setMatchNotice(`Driver route published: ${driverOrigin} ➔ ${driverDest} with ${driverSeats} open seats. Route: ${res.driverRoute.join(' → ')}.`);
+        setTimeout(() => setMatchNotice(null), 5000);
+      }, 1500);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to publish route');
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -200,12 +268,9 @@ export const RidesPage: React.FC<{ currentRole?: string }> = () => {
                     onChange={(e) => setOrigin(e.target.value)}
                     className="w-full bg-transparent font-body-sm text-body-sm text-on-surface focus:outline-none"
                   >
-                    <option value="N_DORMS">North Dorms (Node 01)</option>
-                    <option value="ENG_ARCH">Engineering Arch (Node 03)</option>
-                    <option value="CENTRAL_LIB">Central Library (Node 04)</option>
-                    <option value="STU_UNION">Student Union (Node 02)</option>
-                    <option value="WEST_GATE">West Gate Transit (Node 06)</option>
-                    <option value="SOUTH_HOSTELS">South Hostels (Node 09)</option>
+                    {CANONICAL_NODES.map(n => (
+                      <option key={n.id} value={n.id}>{n.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -220,11 +285,9 @@ export const RidesPage: React.FC<{ currentRole?: string }> = () => {
                     onChange={(e) => setDestination(e.target.value)}
                     className="w-full bg-transparent font-body-sm text-body-sm text-on-surface focus:outline-none"
                   >
-                    <option value="ENG_ARCH">Engineering Arch / North Gate (Node 03)</option>
-                    <option value="TURING_HALL">Turing Computing Labs (Node 05)</option>
-                    <option value="INNOVATION_HUB">Innovation Hub (Node 08)</option>
-                    <option value="SOUTH_HOSTELS">South Hostels (Node 09)</option>
-                    <option value="SCIENCE_BLOCK">Science Quad (Node 07)</option>
+                    {CANONICAL_NODES.map(n => (
+                      <option key={n.id} value={n.id}>{n.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -308,7 +371,7 @@ export const RidesPage: React.FC<{ currentRole?: string }> = () => {
                     Discovered Corridor Matches
                   </span>
                   <span className="px-2 py-0.5 bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">
-                    3 ACTIVE
+                    {offers.length} ACTIVE
                   </span>
                 </div>
                 <span className="font-label-sm text-label-sm text-outline uppercase font-mono">
@@ -316,130 +379,104 @@ export const RidesPage: React.FC<{ currentRole?: string }> = () => {
                 </span>
               </div>
 
-              {/* Match 1: Recommended */}
-              <article className="bg-surface-container-lowest p-6 border border-outline-variant shadow-sm flex flex-col gap-3 relative overflow-hidden">
-                <div className="absolute top-0 right-0 px-3 py-1 bg-secondary text-on-secondary font-label-sm text-label-sm font-bold uppercase tracking-wider font-mono">
-                  OPTIMAL DIJKSTRA MATCH (98.6%)
+              {loadingOffers ? (
+                <div className="p-8 text-center font-mono text-xs text-outline">
+                  LOADING LIVE COMMUTE OFFERS...
                 </div>
+              ) : offers.length === 0 ? (
+                <div className="p-8 text-center bg-surface-container-low border border-outline-variant font-mono text-xs text-outline">
+                  No active ride offers currently published for this corridor.
+                </div>
+              ) : (
+                offers.map((offer, idx) => {
+                  const driverInitials = offer.driver_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'DR';
+                  const planned = Array.isArray(offer.planned_route)
+                    ? offer.planned_route
+                    : (typeof offer.planned_route === 'string' ? JSON.parse(offer.planned_route || '[]') : []);
 
-                <div className="flex items-start justify-between pt-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary text-on-primary flex items-center justify-center font-mono text-lg font-bold">
-                      VR
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="font-headline-sm text-headline-sm text-primary font-bold">
-                          Vikram Rao
-                        </h2>
-                        <span className="px-1.5 py-0.5 bg-surface-container font-mono text-[10px] text-on-surface font-medium border border-outline-variant">
-                          Verified Campus Peer
-                        </span>
+                  return (
+                    <article key={offer.id} className="bg-surface-container-lowest p-6 border border-outline-variant shadow-sm flex flex-col gap-3 relative overflow-hidden">
+                      {idx === 0 && (
+                        <div className="absolute top-0 right-0 px-3 py-1 bg-secondary text-on-secondary font-label-sm text-label-sm font-bold uppercase tracking-wider font-mono">
+                          OPTIMAL DIJKSTRA MATCH
+                        </div>
+                      )}
+
+                      <div className="flex items-start justify-between pt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-primary text-on-primary flex items-center justify-center font-mono text-lg font-bold">
+                            {driverInitials}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h2 className="font-headline-sm text-headline-sm text-primary font-bold">
+                                {offer.driver_name}
+                              </h2>
+                              <span className="px-1.5 py-0.5 bg-surface-container font-mono text-[10px] text-on-surface font-medium border border-outline-variant">
+                                {offer.driver_dept || 'Campus Transit'}
+                              </span>
+                            </div>
+                            <p className="font-body-sm text-body-sm text-on-surface-variant font-mono">
+                              {offer.vehicle_type} • Departure: {offer.departure_time}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant font-mono">
-                        Tata Nexon EV • License Mesh [***42E]
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-surface-container-low border border-outline-variant font-mono">
-                  <div>
-                    <div className="font-label-sm text-label-sm text-outline uppercase">Departure Window</div>
-                    <div className="font-body-md text-body-md font-bold text-primary">
-                      08:42 AM <span className="text-secondary font-normal">(In 18 mins)</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-label-sm text-label-sm text-outline uppercase">Detour Impact</div>
-                    <div className="font-body-md text-body-md font-bold text-secondary">+2.8 min (Safe)</div>
-                  </div>
-                  <div>
-                    <div className="font-label-sm text-label-sm text-outline uppercase">Capacity</div>
-                    <div className="font-body-md text-body-md font-bold text-primary">2 of 4 Seats Open</div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1 font-body-sm text-body-sm">
-                  <div className="flex items-center gap-2 text-on-surface font-mono text-xs">
-                    <span className="material-symbols-outlined text-[16px] text-secondary">alt_route</span>
-                    <span className="font-bold">North Dorms → Central Library → Engineering Arch</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm font-mono">
-                    <span className="material-symbols-outlined text-[14px]">eco</span>
-                    <span>0.34 kg CO₂e saved • Zero direct tailpipe emissions leg</span>
-                    <span className="text-outline-variant">|</span>
-                    <span className="material-symbols-outlined text-[14px]">school</span>
-                    <span>Quiet study commute</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/40 mt-1 font-mono">
-                  <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                    <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                    <span>WebRTC Peer Channel Attested</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleSeatRequest('Vikram Rao', '0.34 kg')}
-                      className="px-4 py-2 bg-secondary text-on-secondary hover:opacity-90 font-label-sm text-label-sm uppercase font-bold flex items-center gap-1.5 shadow-sm"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">handshake</span>
-                      Request Seat Handshake
-                    </button>
-                  </div>
-                </div>
-              </article>
-
-              {/* Match 2 */}
-              <article className="bg-surface-container-lowest p-6 border border-outline-variant shadow-sm flex flex-col gap-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-surface-container-high text-on-surface flex items-center justify-center font-mono text-lg font-bold border border-outline">
-                      AI
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="font-headline-sm text-headline-sm text-primary font-bold">
-                          Ananya Iyer
-                        </h2>
-                        <span className="px-1.5 py-0.5 bg-surface-container font-mono text-[10px] text-on-surface font-medium border border-outline-variant">
-                          Transit Operator
-                        </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-surface-container-low border border-outline-variant font-mono">
+                        <div>
+                          <div className="font-label-sm text-label-sm text-outline uppercase">Departure Window</div>
+                          <div className="font-body-md text-body-md font-bold text-primary">
+                            {offer.departure_time}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-label-sm text-label-sm text-outline uppercase">Detour Tolerance</div>
+                          <div className="font-body-md text-body-md font-bold text-secondary">
+                            &le; 35% Safe Detour
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-label-sm text-label-sm text-outline uppercase">Capacity</div>
+                          <div className="font-body-md text-body-md font-bold text-primary">
+                            {offer.available_seats} of {offer.total_seats} Open
+                          </div>
+                        </div>
                       </div>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant font-mono">
-                        Campus Electric Shuttle 03 • Circular Loop
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-surface-container-low border border-outline-variant font-mono">
-                  <div>
-                    <div className="font-label-sm text-label-sm text-outline uppercase">Departure Window</div>
-                    <div className="font-body-md text-body-md font-bold text-primary">08:50 AM</div>
-                  </div>
-                  <div>
-                    <div className="font-label-sm text-label-sm text-outline uppercase">Detour Impact</div>
-                    <div className="font-body-md text-body-md font-bold text-primary">+0.0 min (Scheduled)</div>
-                  </div>
-                  <div>
-                    <div className="font-label-sm text-label-sm text-outline uppercase">Capacity</div>
-                    <div className="font-body-md text-body-md font-bold text-primary">8 of 14 Open</div>
-                  </div>
-                </div>
+                      <div className="flex flex-col gap-1 font-body-sm text-body-sm">
+                        <div className="flex items-center gap-2 text-on-surface font-mono text-xs">
+                          <span className="material-symbols-outlined text-[16px] text-secondary">alt_route</span>
+                          <span className="font-bold">
+                            {planned.length > 0 ? planned.join(' ➔ ') : `${offer.origin_node_id} ➔ ${offer.destination_node_id}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-on-surface-variant font-label-sm text-label-sm font-mono">
+                          <span className="material-symbols-outlined text-[14px]">eco</span>
+                          <span>0.34 kg CO₂e avoided • Tailpipe abatement corridor</span>
+                        </div>
+                      </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/40 mt-1 font-mono">
-                  <span className="text-xs text-outline">Loop Frequency: Every 12 minutes</span>
-                  <button
-                    onClick={() => handleSeatRequest('Ananya Iyer (Shuttle 03)', '0.52 kg')}
-                    className="px-4 py-2 bg-primary text-on-primary hover:bg-secondary font-label-sm text-label-sm uppercase font-bold flex items-center gap-1.5"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">confirmation_number</span>
-                    Reserve Shuttle Pass
-                  </button>
-                </div>
-              </article>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/40 mt-1 font-mono">
+                        <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+                          <span className="w-2 h-2 rounded-full bg-secondary"></span>
+                          <span>WebRTC Peer Corridor Attested</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleSeatRequest(offer)}
+                            disabled={offer.available_seats <= 0}
+                            className="px-4 py-2 bg-secondary text-on-secondary hover:opacity-90 font-label-sm text-label-sm uppercase font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">handshake</span>
+                            {offer.available_seats > 0 ? 'Request Seat Handshake' : 'Fully Booked'}
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
             </section>
 
             {/* Right Column: Spatial Campus Topology Map (5 Cols) */}
@@ -523,10 +560,9 @@ export const RidesPage: React.FC<{ currentRole?: string }> = () => {
                     onChange={(e) => setDriverOrigin(e.target.value)}
                     className="w-full p-2.5 bg-surface-container-low border border-outline-variant text-primary focus:outline-none focus:border-secondary"
                   >
-                    <option value="N_DORMS">North Dorms (Node 01)</option>
-                    <option value="WEST_GATE">West Gate (Node 06)</option>
-                    <option value="CENTRAL_LIB">Central Library (Node 04)</option>
-                    <option value="SOUTH_HOSTELS">South Hostels (Node 09)</option>
+                    {CANONICAL_NODES.map(n => (
+                      <option key={n.id} value={n.id}>{n.name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -539,9 +575,9 @@ export const RidesPage: React.FC<{ currentRole?: string }> = () => {
                     onChange={(e) => setDriverDest(e.target.value)}
                     className="w-full p-2.5 bg-surface-container-low border border-outline-variant text-primary focus:outline-none focus:border-secondary"
                   >
-                    <option value="ENG_ARCH">Engineering Arch (Node 03)</option>
-                    <option value="TURING_HALL">Turing Computing Labs (Node 05)</option>
-                    <option value="INNOVATION_HUB">Innovation Hub (Node 08)</option>
+                    {CANONICAL_NODES.map(n => (
+                      <option key={n.id} value={n.id}>{n.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>

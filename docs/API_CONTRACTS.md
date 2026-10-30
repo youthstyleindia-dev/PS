@@ -117,3 +117,63 @@ Standard Error Codes: `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404)
 | `GET` | `/api/exams/events/:sessionId` | Retrieves all timestamped incidents for an exam session |
 | `PATCH`| `/api/exams/events/:id/review`| Proctor submits written justification and adjudicates incident |
 | `GET` | `/api/exams/audit-log/:sessionId`| Returns immutable audit log of all proctor actions and decisions |
+
+---
+
+## 8. Module F: Campus Community Feed (`/api/feed`)
+
+| Method | Endpoint | Access | Request Body | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/feed` | Bearer Token | Query: `category`, `search`, `limit`, `offset` | Lists campus feed posts with author profiles, reaction counts, and user interaction states |
+| `POST` | `/api/feed/posts` | Bearer Token | `{ title?, content, category, tags? }` | Publishes new campus post or notice (`general`, `announcement`, `question`, `event`, `opportunity`) |
+| `GET` | `/api/feed/posts/:postId` | Bearer Token | None | Retrieves post details, comments tree, and current user reaction state |
+| `PATCH` | `/api/feed/posts/:postId` | Bearer Token | `{ title?, content?, category?, tags? }` | Updates post content (enforces author ownership or admin role) |
+| `DELETE` | `/api/feed/posts/:postId` | Bearer Token | None | Deletes post (enforces author ownership or admin role) |
+| `POST` | `/api/feed/posts/:postId/reactions` | Bearer Token | `{ reaction_type: 'like' \| 'insightful' \| 'celebrate' }` | Toggles reaction on post; updates reaction aggregates atomically |
+| `GET` | `/api/feed/posts/:postId/comments` | Bearer Token | None | Lists comments with nested author metadata |
+| `POST` | `/api/feed/posts/:postId/comments` | Bearer Token | `{ content, parent_comment_id? }` | Adds top-level or reply comment |
+| `POST` | `/api/feed/posts/:postId/bookmarks` | Bearer Token | None | Toggles post bookmark state for authenticated user |
+| `POST` | `/api/feed/posts/:postId/reports` | Bearer Token | `{ reason, details? }` | Flags post for moderation review (`spam`, `harassment`, `misinformation`) |
+
+---
+
+## 9. Module G: Senior Mentorship Network (`/api/mentors` & `/api/mentorship`)
+
+| Method | Endpoint | Access | Request Body | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/mentors` | Bearer Token | Query: `query`, `domain`, `skill`, `limit` | Searches seniors and returns profiles with explainable match scores |
+| `GET` | `/api/mentors/:mentorId` | Bearer Token | None | Detailed mentor profile with past advice history, active status, and capacity |
+| `GET` | `/api/mentorship/requests` | Bearer Token | Query: `role: 'student' \| 'mentor'` | Lists outgoing guidance requests (student) or incoming guidance queue (mentor) |
+| `POST` | `/api/mentorship/requests` | Bearer Token | `{ mentor_id, topic, message, priority? }` | Submits structured guidance request to a verified senior mentor |
+| `PATCH` | `/api/mentorship/requests/:requestId` | Bearer Token | `{ status: 'ACCEPTED' \| 'DECLINED', notes? }` | Mentor adjudicates request; acceptance provisions private conversation automatically |
+| `GET` | `/api/mentorship/conversations/:id` | Bearer Token | None | Retrieves private mentorship chat thread (enforces student/mentor participant isolation) |
+| `POST` | `/api/mentorship/conversations/:id/messages` | Bearer Token | `{ content }` | Sends private message within active mentorship thread |
+
+---
+
+## 10. Module H: Campus Copilot & Cloud AI (`/api/assistant`)
+
+| Method | Endpoint | Access | Request Body | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/assistant/conversations` | Bearer Token | None | Lists user's past conversational threads with Copilot |
+| `POST` | `/api/assistant/conversations` | Bearer Token | `{ title? }` | Initializes a fresh conversational session |
+| `GET` | `/api/assistant/conversations/:id` | Bearer Token | None | Retrieves conversation message history with grounded source citations |
+| `DELETE` | `/api/assistant/conversations/:id` | Bearer Token | None | Clears conversational session and associated chat context |
+| `POST` | `/api/assistant/conversations/:id/messages` | Bearer Token | `{ message }` | Sends user query; invokes `@google/genai` with grounded SQLite context; returns streaming-ready response and proposed action cards |
+| `POST` | `/api/assistant/actions/:actionId/confirm` | Bearer Token | None | User confirms proposed mutating action (e.g. submit mentorship request, register for event) |
+
+---
+
+## 11. Module I: Campus Directory, Events, Communities & Facilities (`/api/campus`)
+
+| Method | Endpoint | Access | Request Body | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/campus/directory` | Bearer Token | Query: `query`, `department`, `role` | Searches campus directory (students, faculty, mentors, staff) |
+| `GET` | `/api/campus/events` | Bearer Token | Query: `upcoming`, `category` | Retrieves upcoming campus workshops, hackathons, seminars, and club meets |
+| `POST` | `/api/campus/events/:id/rsvp` | Bearer Token | None | Toggles RSVP registration status for authenticated student |
+| `GET` | `/api/campus/communities` | Bearer Token | None | Lists official student clubs, research groups, and interest communities |
+| `POST` | `/api/campus/communities/:id/join` | Bearer Token | None | Toggles membership in campus community |
+| `GET` | `/api/campus/announcements` | Bearer Token | Query: `urgency` | Retrieves official institutional notices and campus advisories |
+| `GET` | `/api/campus/facilities/issues` | Bearer Token | Query: `status` | Lists reported campus defects (wardens/admins get all; students get own) |
+| `POST` | `/api/campus/facilities/issues` | Bearer Token | `{ title, description, category, location_id?, urgency? }` | Submits facility defect or repair ticket |
+| `PATCH` | `/api/campus/facilities/issues/:id` | Bearer Token | `{ status: 'INVESTIGATING' \| 'RESOLVED', resolution_notes? }` | Warden/Admin updates issue resolution status |

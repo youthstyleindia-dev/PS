@@ -16,11 +16,20 @@ export interface NavGroup {
 export const navigationByRole: Record<UserRole, NavGroup[]> = {
   student: [
     {
-      groupName: 'SCHOLAR WORKSPACE',
+      groupName: 'CAMPUS COMMONS',
       items: [
         { label: 'Collegiate Overview', path: '/app', icon: 'dashboard' },
+        { label: 'Campus Feed', path: '/feed', icon: 'newspaper', badge: 'Live' },
+        { label: 'Find Senior Mentors', path: '/mentors', icon: 'psychology', badge: 'ML / AI' },
+        { label: 'Campus Copilot', path: '/assistant', icon: 'auto_awesome', badge: 'AI' },
+        { label: 'Events & Communities', path: '/events', icon: 'calendar_month' },
+        { label: 'Report Facility Issue', path: '/facilities', icon: 'build' }
+      ]
+    },
+    {
+      groupName: 'SCHOLAR WORKSPACE',
+      items: [
         { label: 'Skill Tree & Readiness', path: '/academic', icon: 'school', badge: 'DSA' },
-        { label: 'Mentorship Commons', path: '/academic', icon: 'group' },
         { label: 'Academic Resources', path: '/academic', icon: 'menu_book' }
       ]
     },
@@ -39,6 +48,7 @@ export const navigationByRole: Record<UserRole, NavGroup[]> = {
     {
       groupName: 'COLLEGIATE PRINCIPLES',
       items: [
+        { label: 'Architecture & Audits', path: '/architecture', icon: 'hub' },
         { label: 'Workflow Explainer', path: '/how-it-works', icon: 'route' },
         { label: 'Impact & Carbon', path: '/impact', icon: 'analytics' },
         { label: 'Zero-Tax Ethos', path: '/about', icon: 'verified' }
@@ -57,14 +67,17 @@ export const navigationByRole: Record<UserRole, NavGroup[]> = {
       groupName: 'TRANSIT DISPATCH',
       items: [
         { label: 'Driver Dashboard', path: '/app', icon: 'dashboard' },
+        { label: 'Live Trip Dispatch & Rosters', path: '/driver/trips', icon: 'local_taxi', badge: 'Live Ops' },
         { label: 'Publish Route Offer', path: '/rides', icon: 'add_road', badge: 'Active' },
         { label: 'Passenger Requests', path: '/rides', icon: 'group_add' },
         { label: 'Campus Map & Route', path: '/rides', icon: 'map' }
       ]
     },
     {
-      groupName: 'EMISSION OBSERVATORY',
+      groupName: 'CAMPUS MESH',
       items: [
+        { label: 'Campus Feed', path: '/feed', icon: 'newspaper' },
+        { label: 'Campus Copilot', path: '/assistant', icon: 'auto_awesome' },
         { label: 'Avoided Carbon Telemetry', path: '/sustainability', icon: 'energy_savings_leaf' }
       ]
     },
@@ -92,6 +105,7 @@ export const navigationByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { label: 'Responsible AI Ethos', path: '/about', icon: 'balance' },
         { label: 'Algorithm Sandbox', path: '/architecture', icon: 'hub' },
+        { label: 'Campus Feed', path: '/feed', icon: 'newspaper' },
         { label: 'Account Settings', path: '/settings', icon: 'key' }
       ]
     }
@@ -102,7 +116,10 @@ export const navigationByRole: Record<UserRole, NavGroup[]> = {
       groupName: 'ACADEMIC FACULTY & MENTOR',
       items: [
         { label: 'Faculty Overview', path: '/app', icon: 'dashboard' },
-        { label: 'Mentorship Applications', path: '/academic', icon: 'contact_page', badge: 'P2P' },
+        { label: 'Campus Community Feed', path: '/feed', icon: 'newspaper', badge: 'Active' },
+        { label: 'Senior Mentorship Network', path: '/mentors', icon: 'psychology' },
+        { label: 'Campus Copilot', path: '/assistant', icon: 'auto_awesome' },
+        { label: 'Campus Events & Guilds', path: '/events', icon: 'calendar_month' },
         { label: 'Resource Publisher', path: '/academic', icon: 'upload_file' },
         { label: 'Student Readiness Stats', path: '/academic', icon: 'insights' }
       ]
@@ -112,6 +129,7 @@ export const navigationByRole: Record<UserRole, NavGroup[]> = {
       items: [
         { label: 'Campus Transit', path: '/rides', icon: 'directions_car' },
         { label: 'Cluster Sustainability', path: '/sustainability', icon: 'energy_savings_leaf' },
+        { label: 'Architecture & Specifications', path: '/architecture', icon: 'hub' },
         { label: 'Settings', path: '/settings', icon: 'key' }
       ]
     }
@@ -122,9 +140,11 @@ export const navigationByRole: Record<UserRole, NavGroup[]> = {
       groupName: 'CAMPUS LIFE & RESIDENTIAL',
       items: [
         { label: 'Warden Overview', path: '/app', icon: 'dashboard' },
+        { label: 'Facility Issues & Defects', path: '/facilities', icon: 'build', badge: 'Triage' },
+        { label: 'Campus Feed & Notices', path: '/feed', icon: 'newspaper', badge: 'Notice' },
+        { label: 'Events & Facilities Directory', path: '/events', icon: 'calendar_month' },
         { label: 'Campus Mobility Grid', path: '/rides', icon: 'directions_car' },
         { label: 'Facility Energy Load', path: '/sustainability', icon: 'solar_power' },
-        { label: 'Campus Announcements', path: '/how-it-works', icon: 'campaign' },
         { label: 'Safety & Settings', path: '/settings', icon: 'key' }
       ]
     }
@@ -135,6 +155,11 @@ export const navigationByRole: Record<UserRole, NavGroup[]> = {
       groupName: 'SYSTEM ENCLAVE',
       items: [
         { label: 'Root System Overview', path: '/app', icon: 'admin_panel_settings' },
+        { label: 'Feed Moderation & Posts', path: '/feed', icon: 'newspaper' },
+        { label: 'Facility Defect Triage', path: '/facilities', icon: 'build' },
+        { label: 'Senior Mentors Enclave', path: '/mentors', icon: 'psychology' },
+        { label: 'Campus Copilot', path: '/assistant', icon: 'auto_awesome' },
+        { label: 'Events & Communities', path: '/events', icon: 'calendar_month' },
         { label: 'User Directory & Roles', path: '/settings', icon: 'manage_accounts', badge: 'RBAC' },
         { label: 'Security Audit Log', path: '/settings', icon: 'security' },
         { label: 'Slurm Carbon & HPC', path: '/sustainability', icon: 'energy_savings_leaf' },

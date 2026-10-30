@@ -51,10 +51,10 @@ export const LandingPage: React.FC = () => {
               Sign In
             </button>
             <button
-              onClick={() => navigate('/onboarding')}
+              onClick={() => navigate('/app')}
               className="px-4 py-2 bg-primary text-on-primary font-label-md text-label-md uppercase tracking-wider font-bold hover:bg-secondary transition-all shadow-sm font-mono flex items-center gap-1.5"
             >
-              <span>Node Setup</span>
+              <span>Explore Console</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
@@ -85,10 +85,10 @@ export const LandingPage: React.FC = () => {
 
             <div className="flex flex-wrap items-center gap-4 pt-2 font-mono">
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/app')}
                 className="px-6 py-3.5 bg-primary text-on-primary font-label-md text-label-md uppercase font-bold hover:bg-secondary transition-all flex items-center gap-2 shadow-sm"
               >
-                <span>Enter Collegiate Sandbox</span>
+                <span>Explore Console</span>
                 <span className="material-symbols-outlined text-[18px]">key</span>
               </button>
 
