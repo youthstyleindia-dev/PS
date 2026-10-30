@@ -235,8 +235,6 @@ export class AuthService {
     let cleanEmail = rawEmail;
     if (rawEmail === 'alex.chen@campus.edu' || rawEmail.startsWith('alex')) {
       cleanEmail = 'aarav.sharma@campus.edu';
-    } else if (rawEmail === 'dr.patel@campus.edu' || rawEmail.includes('patel@campus.edu') && !rawEmail.includes('diya')) {
-      cleanEmail = 'm.sundaram@campus.edu';
     }
 
     let user = db.prepare(`

@@ -20,10 +20,10 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithRole: (email: string, password: string, roleKey: UserRole) => Promise<void>;
-  demoLogin: (role: UserRole) => Promise<void>;
-  register: (data: { name: string; email: string; password: string; role?: UserRole; department?: string; year_of_study?: number }) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  loginWithRole: (email: string, password: string, roleKey: UserRole) => Promise<AuthUser>;
+  demoLogin: (role: UserRole) => Promise<AuthUser>;
+  register: (data: { name: string; email: string; password: string; role?: UserRole; department?: string; year_of_study?: number }) => Promise<AuthUser>;
   logout: () => void;
   switchRole: (role: UserRole) => Promise<void>;
   error: string | null;
@@ -103,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.data.user);
       localStorage.setItem(TOKEN_KEY, data.data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+      return data.data.user;
     } catch (err: any) {
       setError(err.message || 'Login failed');
       throw err;
@@ -126,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.data.user);
       localStorage.setItem(TOKEN_KEY, data.data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+      return data.data.user;
     } catch (err: any) {
       setError(err.message || 'Role login failed');
       throw err;
@@ -149,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.data.user);
       localStorage.setItem(TOKEN_KEY, data.data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+      return data.data.user;
     } catch (err: any) {
       setError(err.message || 'Demo login failed');
       throw err;
@@ -172,6 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.data.user);
       localStorage.setItem(TOKEN_KEY, data.data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.data.user));
+      return data.data.user;
     } catch (err: any) {
       setError(err.message || 'Registration failed');
       throw err;

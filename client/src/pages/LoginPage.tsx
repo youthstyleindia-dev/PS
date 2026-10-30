@@ -3,6 +3,46 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
+const roleDefaultEmail: Record<string, string> = {
+  driver: 'vikram.rao@campus.edu',
+  proctor: 'm.sundaram@campus.edu',
+  ta_faculty: 'dr.patel@campus.edu',
+  faculty: 'dr.patel@campus.edu',
+  warden: 'warden@campus.edu',
+  admin: 'admin@campus.edu',
+  student: 'aarav.sharma@campus.edu'
+};
+
+const roleDefaultRoute: Record<UserRole, string> = {
+  student: '/app',
+  driver: '/driver/trips',
+  proctor: '/exam-monitor',
+  ta_faculty: '/academic',
+  warden: '/facilities',
+  admin: '/app'
+};
+
+const roleAllowedRoutes: Record<UserRole, string[]> = {
+  student: ['/app', '/feed', '/mentors', '/assistant', '/events', '/campus', '/academic', '/hub', '/facilities', '/rides', '/sustainability', '/wellbeing', '/settings', '/architecture'],
+  driver: ['/app', '/feed', '/driver/trips', '/rides', '/sustainability', '/assistant', '/events', '/campus', '/settings', '/architecture'],
+  proctor: ['/app', '/feed', '/exam-monitor', '/exams', '/assistant', '/events', '/campus', '/settings', '/architecture'],
+  ta_faculty: ['/app', '/feed', '/mentors', '/academic', '/hub', '/facilities', '/rides', '/sustainability', '/assistant', '/events', '/campus', '/settings', '/architecture'],
+  warden: ['/app', '/feed', '/facilities', '/rides', '/sustainability', '/assistant', '/events', '/campus', '/settings', '/architecture'],
+  admin: ['/app', '/feed', '/mentors', '/assistant', '/events', '/campus', '/academic', '/hub', '/facilities', '/driver/trips', '/rides', '/sustainability', '/wellbeing', '/exam-monitor', '/exams', '/settings', '/architecture']
+};
+
+function getSafeRedirect(targetPath: string, userRole: UserRole, userRoles: UserRole[]): string {
+  if (!targetPath || targetPath === '/' || targetPath.startsWith('/login')) {
+    return roleDefaultRoute[userRole] || '/app';
+  }
+  const isAllowed = userRoles.some(r => {
+    const allowed = roleAllowedRoutes[r] || [];
+    return allowed.some(p => targetPath === p || targetPath.startsWith(p + '/'));
+  });
+
+  return isAllowed ? targetPath : (roleDefaultRoute[userRole] || '/app');
+}
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -10,8 +50,13 @@ export const LoginPage: React.FC = () => {
   const { roleKey } = useParams<{ roleKey?: string }>();
   const { login, loginWithRole, demoLogin, register, error, clearError } = useAuth();
 
+  // Normalize target role from URL if present
+  const normalizedTargetRole: UserRole | null = roleKey
+    ? (roleKey === 'faculty' || roleKey === 'ta' ? 'ta_faculty' : roleKey as UserRole)
+    : null;
+
   const [activeTab, setActiveTab] = useState<'sso' | 'register'>('sso');
-  const [email, setEmail] = useState('aarav.sharma@campus.edu');
+  const [email, setEmail] = useState(() => (roleKey && roleDefaultEmail[roleKey]) || 'aarav.sharma@campus.edu');
   const [password, setPassword] = useState('CampusPass123!');
   const [isEphemeral, setIsEphemeral] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -24,29 +69,12 @@ export const LoginPage: React.FC = () => {
   const [regPassword, setRegPassword] = useState('');
   const [regDept, setRegDept] = useState('Computer Science & Engineering');
 
-  // Normalize target role from URL if present
-  const normalizedTargetRole: UserRole | null = roleKey
-    ? (roleKey === 'faculty' || roleKey === 'ta' ? 'ta_faculty' : roleKey as UserRole)
-    : null;
-
-  // Set default credentials based on target role portal
+  // Sync default credentials whenever the target role changes
   useEffect(() => {
-    if (normalizedTargetRole === 'driver') {
-      setEmail('vikram.rao@campus.edu');
+    if (normalizedTargetRole && roleDefaultEmail[normalizedTargetRole]) {
+      setEmail(roleDefaultEmail[normalizedTargetRole]);
       setPassword('CampusPass123!');
-    } else if (normalizedTargetRole === 'proctor') {
-      setEmail('m.sundaram@campus.edu');
-      setPassword('CampusPass123!');
-    } else if (normalizedTargetRole === 'ta_faculty') {
-      setEmail('dr.patel@campus.edu');
-      setPassword('CampusPass123!');
-    } else if (normalizedTargetRole === 'warden') {
-      setEmail('warden@campus.edu');
-      setPassword('CampusPass123!');
-    } else if (normalizedTargetRole === 'admin') {
-      setEmail('admin@campus.edu');
-      setPassword('CampusPass123!');
-    } else if (normalizedTargetRole === 'student') {
+    } else if (!normalizedTargetRole) {
       setEmail('aarav.sharma@campus.edu');
       setPassword('CampusPass123!');
     }
@@ -163,14 +191,15 @@ export const LoginPage: React.FC = () => {
     clearError();
     setLoading(true);
     try {
+      let authUser: any;
       if (activeTab === 'sso') {
         if (normalizedTargetRole) {
-          await loginWithRole(email, password, normalizedTargetRole);
+          authUser = await loginWithRole(email, password, normalizedTargetRole);
         } else {
-          await login(email, password);
+          authUser = await login(email, password);
         }
       } else {
-        await register({
+        authUser = await register({
           name: regName,
           email: regEmail,
           password: regPassword,
@@ -179,7 +208,8 @@ export const LoginPage: React.FC = () => {
           year_of_study: 1
         });
       }
-      navigate(redirectTarget);
+      const safeTarget = getSafeRedirect(redirectTarget, authUser.role, authUser.roles || [authUser.role]);
+      navigate(safeTarget);
     } catch {
       // Error handled by AuthContext
     } finally {
@@ -191,13 +221,16 @@ export const LoginPage: React.FC = () => {
     clearError();
     setLockoutError(null);
     if (normalizedTargetRole && personaRole !== normalizedTargetRole) {
-      setLockoutError(`ACCESS LOCKOUT: ${personaRole.toUpperCase()} account (${personaName}) is strictly locked out of the ${normalizedTargetRole.toUpperCase()} portal. Use the authorized ${normalizedTargetRole.toUpperCase()} account instead.`);
-      return;
+      // Automatically switch to the persona's designated portal and log in smoothly
+      navigate(`/login/${personaRole}`);
+      setEmail(roleDefaultEmail[personaRole] || '');
+      setLockoutError(null);
     }
     setLoading(true);
     try {
-      await demoLogin(personaRole);
-      navigate(redirectTarget);
+      const authUser = await demoLogin(personaRole);
+      const safeTarget = getSafeRedirect(redirectTarget, authUser.role, authUser.roles || [authUser.role]);
+      navigate(safeTarget);
     } catch (err: any) {
       console.error(err);
     } finally {
