@@ -28,7 +28,7 @@ import { RoleGate } from './auth/RoleGate';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const isStandalone = location.pathname === '/' ||
     location.pathname.startsWith('/login') ||
     ['/onboarding', '/how-it-works', '/about', '/impact'].includes(location.pathname) ||
@@ -37,6 +37,21 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   if (isStandalone) {
     return <>{children}</>;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-surface font-mono text-sm text-on-surface-variant">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span className="uppercase tracking-widest text-xs">Authenticating UniVerse Campus Session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return (

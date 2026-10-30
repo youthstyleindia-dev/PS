@@ -453,8 +453,12 @@ export const CampusFeedPage: React.FC = () => {
           ) : (
             <div className="flex flex-col gap-4">
               {posts.map(post => {
-                const badge = postTypeBadge[post.postType] || { label: post.postType.toUpperCase(), color: 'bg-surface-container' };
+                const badge = (post.postType && postTypeBadge[post.postType]) || { label: (post.postType || 'POST').toUpperCase(), color: 'bg-surface-container' };
                 const isAuthor = user?.id === post.authorId || user?.role === 'admin';
+                const authorName = post.author?.name || 'Campus Scholar';
+                const authorRole = post.author?.role || 'student';
+                const authorAvatar = post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(authorName)}`;
+                const createdDate = post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Recent';
 
                 return (
                   <article
@@ -465,17 +469,17 @@ export const CampusFeedPage: React.FC = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={post.author.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author.name}`}
-                          alt={post.author.name}
+                          src={authorAvatar}
+                          alt={authorName}
                           className="w-10 h-10 rounded-full border border-outline-variant object-cover bg-surface-container"
                         />
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-body-sm font-bold text-on-surface">
-                              {post.author.name}
+                              {authorName}
                             </span>
                             <span className="text-[10px] px-1.5 py-0.2 bg-surface-container text-on-surface-variant font-mono uppercase">
-                              {post.author.role}
+                              {authorRole}
                             </span>
                             {post.isDemo && (
                               <span className="text-[9px] px-1 bg-surface-container-high text-outline font-mono uppercase">
@@ -484,7 +488,7 @@ export const CampusFeedPage: React.FC = () => {
                             )}
                           </div>
                           <div className="text-[11px] text-on-surface-variant font-mono">
-                            {post.author.department || 'Campus Scholar'} • {new Date(post.createdAt).toLocaleDateString()}
+                            {post.author?.department || 'Campus Scholar'} • {createdDate}
                           </div>
                         </div>
                       </div>
@@ -654,10 +658,10 @@ export const CampusFeedPage: React.FC = () => {
                   <div key={a.id} className="p-3 bg-surface-container-lowest border border-outline-variant flex flex-col gap-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] px-1.5 py-0.2 bg-red-100 text-red-800 font-mono uppercase font-bold">
-                        {a.priority.toUpperCase()}
+                        {(a.priority || 'normal').toUpperCase()}
                       </span>
                       <span className="text-[10px] text-outline font-mono">
-                        {a.author.name}
+                        {a.author?.name || 'Campus Administration'}
                       </span>
                     </div>
                     <h5 className="font-bold text-xs text-on-surface mt-1 leading-snug">{a.title}</h5>
@@ -699,7 +703,7 @@ export const CampusFeedPage: React.FC = () => {
                     </div>
                     <h5 className="font-bold text-xs text-on-surface leading-snug">{e.title}</h5>
                     <div className="text-[10px] text-on-surface-variant font-mono">
-                      📍 {e.venue} • {new Date(e.startTime).toLocaleDateString()}
+                      📍 {e.venue || 'Campus Center'} • {e.startTime ? new Date(e.startTime).toLocaleDateString() : 'TBD'}
                     </div>
                     <button
                       onClick={() => navigate('/events')}
@@ -733,17 +737,17 @@ export const CampusFeedPage: React.FC = () => {
                 <div key={m.id} className="p-3 bg-surface-container-lowest border border-outline-variant flex flex-col gap-1.5">
                   <div className="flex items-center gap-2">
                     <img
-                      src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.name}`}
+                      src={m.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(m.name || 'Mentor')}`}
                       alt={m.name}
                       className="w-8 h-8 rounded-full border border-outline-variant object-cover"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="font-bold text-xs text-on-surface truncate">{m.name}</div>
-                      <div className="text-[10px] text-secondary font-mono truncate">{m.companyOffer}</div>
+                      <div className="text-[10px] text-secondary font-mono truncate">{m.companyOffer || 'Senior Peer Mentor'}</div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {m.skills.slice(0, 3).map(s => (
+                    {(Array.isArray(m.skills) ? m.skills : []).slice(0, 3).map(s => (
                       <span key={s} className="text-[9px] px-1.5 py-0.2 bg-surface-container font-mono">
                         {s}
                       </span>

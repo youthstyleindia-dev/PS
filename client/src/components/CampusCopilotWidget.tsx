@@ -17,16 +17,16 @@ export const CampusCopilotWidget: React.FC = () => {
   const location = useLocation();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Don't render on the dedicated copilot page or public pages
-  if (location.pathname === '/assistant' || location.pathname === '/' || location.pathname.startsWith('/login')) {
-    return null;
-  }
-
   useEffect(() => {
     if (isOpen) {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
+
+  // Don't render on the dedicated copilot page or public pages
+  if (location.pathname === '/assistant' || location.pathname === '/' || location.pathname.startsWith('/login')) {
+    return null;
+  }
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
